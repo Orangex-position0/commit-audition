@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//mnt/e/test/rust/**)",
+      "Bash(cargo check:*)",
+      "Bash(openspec instructions:*)",
+      "Bash(openspec status:*)",
+      "Bash(cargo build:*)",
+      "Bash(cargo test:*)",
+      "Bash(openspec list:*)",
+      "Bash(openspec new:*)"
+    ]
+  }
+}
