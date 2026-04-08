@@ -121,6 +121,7 @@ extension = "md"            # 临时文件扩展名
 | [依赖说明](docs/note/dependencies.md) | 依赖选型理由 |
 | [校验策略](docs/note/Commit%20Message%20校验策略.md) | Commit message 校验方案 |
 | [使用指南](docs/Usage.md) | 详细使用文档 |
+| [构建与发布指南](docs/release-guide.md) | cargo-dist + GitHub Actions 自动发布流程 |
 
 ## 许可证
 

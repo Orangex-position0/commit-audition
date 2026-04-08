@@ -8,7 +8,10 @@
       "Bash(cargo build:*)",
       "Bash(cargo test:*)",
       "Bash(openspec list:*)",
-      "Bash(openspec new:*)"
+      "Bash(openspec new:*)",
+      "WebSearch",
+      "mcp__web-reader__webReader",
+      "mcp__web-search-prime__web_search_prime"
     ]
   }
 }
