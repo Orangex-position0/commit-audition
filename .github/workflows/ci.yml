@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality:
+    name: Quality Check
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Compile check
+        run: cargo check --locked
+
+      - name: Format check
+        run: cargo fmt --check
+
+      - name: Lint check
+        run: cargo clippy -- -D warnings
+
+      - name: Run tests
+        run: cargo test
