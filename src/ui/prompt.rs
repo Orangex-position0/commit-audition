@@ -1,10 +1,6 @@
-use dialoguer::{Confirm, Input, Select, theme::ColorfulTheme};
-use colored::Colorize;
-use crate::logic::model::{CommitMessageEntity, CommitTagType};
-use crate::logic::rules::{validate_title, TitleError};
+use crate::prelude::*;
 use crate::ui::editor::input_body;
 use crate::ui::render::render_colored_preview;
-
 
 /// 交互式问答，逐步收集 commit message 各个部分
 pub fn run_prompt() -> Option<CommitMessageEntity> {
@@ -21,7 +17,7 @@ pub fn run_prompt() -> Option<CommitMessageEntity> {
             .unwrap_or(false);
 
         if confirmed {
-            return Some(msg)
+            return Some(msg);
         }
 
         let redo = Confirm::with_theme(&ColorfulTheme::default())
@@ -67,8 +63,6 @@ fn select_type() -> Option<CommitTagType> {
     CommitTagType::ALL.get(index).copied()
 }
 
-
-
 /// 输入 commit title
 fn input_title() -> Option<String> {
     Input::with_theme(&ColorfulTheme::default())
@@ -77,12 +71,11 @@ fn input_title() -> Option<String> {
             match validate_title(input) {
                 Ok(_) => Ok(()),
                 Err(TitleError::Empty) => Err("标题不能为空".into()),
-                Err(TitleError::TooLong { width, max }) => {
-                    Err(format!("标题长度超出限制，当前长度为 {}，最大长度为 {}", width, max))
-                }
-                Err(TitleError::EndsWithPeriod) => {
-                    Err("标题不能以句号结束".into())
-                }
+                Err(TitleError::TooLong { width, max }) => Err(format!(
+                    "标题长度超出限制，当前长度为 {}，最大长度为 {}",
+                    width, max
+                )),
+                Err(TitleError::EndsWithPeriod) => Err("标题不能以句号结束".into()),
             }
         })
         .allow_empty(false)

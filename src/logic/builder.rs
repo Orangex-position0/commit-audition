@@ -16,7 +16,8 @@ pub fn build_message(msg: &CommitMessageEntity) -> String {
     parts.push(format!("{}: {}", msg.commit_tag_type.as_str(), msg.title));
 
     // 空行 + 正文
-    if let Some(body) = &msg.body && !body.trim().is_empty()
+    if let Some(body) = &msg.body
+        && !body.trim().is_empty()
     {
         parts.push(String::new());
         parts.push(body.clone());
@@ -31,13 +32,17 @@ pub fn build_message(msg: &CommitMessageEntity) -> String {
     parts.join("\n")
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::logic::model::CommitTagType;
 
-    fn make_msg(commit_tag_type: CommitTagType, title: &str, body: Option<&str>, issue_num: Option<u32>) -> CommitMessageEntity {
+    fn make_msg(
+        commit_tag_type: CommitTagType,
+        title: &str,
+        body: Option<&str>,
+        issue_num: Option<u32>,
+    ) -> CommitMessageEntity {
         CommitMessageEntity {
             commit_tag_type,
             title: title.to_string(),
@@ -60,7 +65,8 @@ mod tests {
             Some("The timeout was too short.\nIncreased to 30 seconds."),
             None,
         );
-        let expected = "fix: Fix login timeout\n\nThe timeout was too short.\nIncreased to 30 seconds.";
+        let expected =
+            "fix: Fix login timeout\n\nThe timeout was too short.\nIncreased to 30 seconds.";
         assert_eq!(build_message(&msg), expected);
     }
 

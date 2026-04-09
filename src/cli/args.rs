@@ -50,7 +50,9 @@ pub enum CliConfig {
 impl From<CliArgs> for CliConfig {
     fn from(args: CliArgs) -> Self {
         match args.command {
-            None => CliConfig::Interactive { template: args.template},
+            None => CliConfig::Interactive {
+                template: args.template,
+            },
             Some(Commands::Validate { file }) => CliConfig::Validate { file },
             Some(Commands::Hook { action }) => CliConfig::Hook(action),
         }

@@ -116,7 +116,7 @@ impl CommitMsgParsed {
     pub fn parse(content: &str) -> Self {
         let content = content.trim();
         let first_line = content.lines().next().unwrap_or("");
-        
+
         let (type_prefix, title) = match first_line.find(":") {
             None => (None, first_line.to_string()),
             Some(pos) => {
@@ -125,11 +125,12 @@ impl CommitMsgParsed {
                 (Some(prefix), title)
             }
         };
-        
-        let body = content.find("\n\n")
+
+        let body = content
+            .find("\n\n")
             .map(|pos| content[pos + 2..].trim().to_string())
             .filter(|b| !b.is_empty());
-        
+
         Self {
             type_prefix,
             title,
@@ -137,7 +138,6 @@ impl CommitMsgParsed {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {

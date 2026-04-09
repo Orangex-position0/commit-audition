@@ -58,5 +58,8 @@ fn e2e_chore_with_body() {
     };
     let output = build_message(&msg);
 
-    assert_eq!(output, "chore: Update CI pipeline\n\nSwitched from Travis CI to GitHub Actions");
+    assert_eq!(
+        output,
+        "chore: Update CI pipeline\n\nSwitched from Travis CI to GitHub Actions"
+    );
 }

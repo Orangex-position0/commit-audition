@@ -1,21 +1,15 @@
 use std::io::Write;
 use std::process::Command;
 
-use colored::Colorize;
-use dialoguer::{Confirm, Editor, Input, Select};
-use dialoguer::theme::ColorfulTheme;
+use dialoguer::Editor;
 use tempfile::NamedTempFile;
 
 use crate::logic::config::load_config;
-use crate::logic::model::EditorMode;
-use crate::logic::rules::{validate_body, BodyError};
+use crate::prelude::*;
 
 /// 在终端中逐行输入正文，输入空行结束
 fn edit_terminal_inline() -> Option<Option<String>> {
-    println!(
-        "{}",
-        "逐行输入正文，输入空行结束: ".yellow()
-    );
+    println!("{}", "逐行输入正文，输入空行结束: ".yellow());
 
     let mut lines: Vec<String> = Vec::new();
     loop {
@@ -42,14 +36,12 @@ fn edit_terminal_inline() -> Option<Option<String>> {
 
     match validate_body(&body) {
         Ok(()) => Some(Some(body)),
-        Err(BodyError::LineTooLong { line_number, max, .. }) => {
+        Err(BodyError::LineTooLong {
+            line_number, max, ..
+        }) => {
             eprintln!(
                 "{}",
-                format!(
-                    "第 {} 行长度超过 {}，请修改",
-                    line_number,
-                    max
-                ).red()
+                format!("第 {} 行长度超过 {}，请修改", line_number, max).red()
             );
             None
         }
@@ -62,10 +54,7 @@ fn edit_default_editor() -> Option<Option<String>> {
 
     match editor_hint {
         Some(ref name) => {
-            println!(
-                "{}",
-                format!("将使用编辑器: {}", name).cyan()
-            );
+            println!("{}", format!("将使用编辑器: {}", name).cyan());
         }
         None => {
             println!(
@@ -91,15 +80,18 @@ fn edit_default_editor() -> Option<Option<String>> {
 
             match validate_body(&body) {
                 Ok(()) => Some(Some(body)),
-                Err(BodyError::LineTooLong { line_number, width, max }) => {
+                Err(BodyError::LineTooLong {
+                    line_number,
+                    width,
+                    max,
+                }) => {
                     eprintln!(
                         "{}",
                         format!(
                             "第 {} 行长度超过 {} (当前 {})，请修改",
-                            line_number,
-                            max,
-                            width
-                        ).red()
+                            line_number, max, width
+                        )
+                        .red()
                     );
                     None
                 }
@@ -109,10 +101,7 @@ fn edit_default_editor() -> Option<Option<String>> {
 }
 
 /// 使用自定义编辑器
-fn edit_custom_editor(
-    command: &str,
-    extension: &str,
-) -> Option<Option<String>> {
+fn edit_custom_editor(command: &str, extension: &str) -> Option<Option<String>> {
     let mut temp = NamedTempFile::new().expect("无法创建临时文件");
 
     writeln!(temp, "# 输入正文内容，保存退出即可").ok()?;
@@ -128,18 +117,14 @@ fn edit_custom_editor(
     let path_str = temp_path.to_str()?;
     full_args.push(path_str);
 
-    let status = Command::new(cmd)
-        .args(&full_args)
-        .status()
-        .ok()?;
+    let status = Command::new(cmd).args(&full_args).status().ok()?;
 
     if !status.success() {
         eprintln!("{}", "编辑器退出异常".red());
         return Some(None);
     }
 
-    let content = std::fs::read_to_string(&temp_path)
-        .ok()?;
+    let content = std::fs::read_to_string(&temp_path).ok()?;
 
     let _ = std::fs::remove_file(&temp_path);
 
@@ -151,13 +136,14 @@ fn edit_custom_editor(
 
     match validate_body(&body) {
         Ok(()) => Some(Some(body)),
-        Err(BodyError::LineTooLong { line_number, width, max }) => {
+        Err(BodyError::LineTooLong {
+            line_number,
+            width,
+            max,
+        }) => {
             eprintln!(
                 "{}",
-                format!(
-                    "第 {} 行超过 {} 字符（当前 {}）",
-                    line_number, max, width
-                ).red()
+                format!("第 {} 行超过 {} 字符（当前 {}）", line_number, max, width).red()
             );
             None
         }
@@ -184,19 +170,13 @@ pub fn input_body() -> Option<Option<String>> {
         EditorMode::CustomEditor => {
             let config = load_config();
             match &config.editor.command {
-                Some(cmd) => edit_custom_editor(
-                    cmd,
-                    &config.editor.extension,
-                ),
+                Some(cmd) => edit_custom_editor(cmd, &config.editor.extension),
                 None => {
                     eprintln!(
                         "{}",
                         "配置文件中未指定编辑器命令，请编辑 ~/.commit-audition/config.toml".red()
                     );
-                    eprintln!(
-                        "{}",
-                        "示例:\n[editor]\ncommand = \"code --wait\"".yellow()
-                    );
+                    eprintln!("{}", "示例:\n[editor]\ncommand = \"code --wait\"".yellow());
                     None
                 }
             }

@@ -1,5 +1,5 @@
-use unicode_width::UnicodeWidthStr;
 use crate::logic::model::CommitTagType;
+use unicode_width::UnicodeWidthStr;
 
 /// 计算 UTF-8 字符串的 Unicode 显示宽度
 pub fn display_width(s: &str) -> usize {
@@ -18,14 +18,10 @@ pub enum TitleError {
     /// 标题不能为空
     Empty,
     /// 标题不能超过 {max} 个字符
-    TooLong {
-        width: usize,
-        max: usize
-    },
+    TooLong { width: usize, max: usize },
     /// 标题不能以句号结尾
     EndsWithPeriod,
 }
-
 
 /// 校验 commit 标题
 /// 判空 -> 长度判断 -> 结尾句号判断
@@ -37,7 +33,10 @@ pub fn validate_title(title: &str) -> Result<(), TitleError> {
 
     let width = display_width(trimmed);
     if width > TITLE_MAX_WIDTH {
-        return Err(TitleError::TooLong { width, max: TITLE_MAX_WIDTH });
+        return Err(TitleError::TooLong {
+            width,
+            max: TITLE_MAX_WIDTH,
+        });
     }
 
     if trimmed.ends_with('.') {
@@ -57,7 +56,7 @@ pub enum BodyError {
         /// 该行实际显示宽度
         width: usize,
         /// 允许的最大显示宽度
-        max: usize
+        max: usize,
     },
 }
 
@@ -71,7 +70,6 @@ pub fn validate_body(body: &str) -> Result<(), BodyError> {
                 width,
                 max: BODY_LINE_MAX_WIDTH,
             });
-
         }
     }
 
@@ -106,7 +104,11 @@ impl std::fmt::Display for CommitMsgError {
         match self {
             CommitMsgError::Empty => write!(f, "commit message 不能为空"),
             CommitMsgError::MissingType { line } => {
-                write!(f, "缺少类型前缀，格式应为 \"<type>: <title>\"\n  你的输入: \"{}\"", line)
+                write!(
+                    f,
+                    "缺少类型前缀，格式应为 \"<type>: <title>\"\n  你的输入: \"{}\"",
+                    line
+                )
             }
             CommitMsgError::InvalidType { found, valid } => {
                 write!(f, "不合法的类型 \"{}\"\n  合法类型: {}", found, valid)
@@ -141,15 +143,12 @@ pub fn validate_raw_commit_msg(content: &str) -> Result<(), CommitMsgError> {
         Some(pos) => &first_line[..pos],
     };
 
-    let valid_types: Vec<&str> = CommitTagType::ALL
-        .iter()
-        .map(|t| t.as_str())
-        .collect();
+    let valid_types: Vec<&str> = CommitTagType::ALL.iter().map(|t| t.as_str()).collect();
     if !valid_types.contains(&type_prefix) {
         return Err(CommitMsgError::InvalidType {
             found: type_prefix.to_string(),
             valid: valid_types.join(", "),
-        })
+        });
     }
 
     let title = first_line
@@ -157,8 +156,7 @@ pub fn validate_raw_commit_msg(content: &str) -> Result<(), CommitMsgError> {
         .unwrap_or("")
         .trim_start();
 
-    validate_title(title)
-        .map_err(CommitMsgError::TitleError)?;
+    validate_title(title).map_err(CommitMsgError::TitleError)?;
 
     let body_part = content
         .find("\n\n")
@@ -166,14 +164,11 @@ pub fn validate_raw_commit_msg(content: &str) -> Result<(), CommitMsgError> {
         .filter(|b| !b.is_empty());
 
     if let Some(body) = &body_part {
-        validate_body(body)
-            .map_err(CommitMsgError::BodyError)?;
+        validate_body(body).map_err(CommitMsgError::BodyError)?;
     }
 
     Ok(())
 }
-
-
 
 #[cfg(test)]
 mod tests {
@@ -207,7 +202,10 @@ mod tests {
     #[test]
     fn validate_title_too_long() {
         let long_title = "A".repeat(51);
-        assert!(matches!(validate_title(&long_title), Err(TitleError::TooLong { .. })));
+        assert!(matches!(
+            validate_title(&long_title),
+            Err(TitleError::TooLong { .. })
+        ));
     }
 
     #[test]
@@ -218,7 +216,10 @@ mod tests {
 
     #[test]
     fn validate_title_ends_with_period() {
-        assert_eq!(validate_title("Fix the bug."), Err(TitleError::EndsWithPeriod));
+        assert_eq!(
+            validate_title("Fix the bug."),
+            Err(TitleError::EndsWithPeriod)
+        );
     }
 
     #[test]
@@ -237,7 +238,10 @@ mod tests {
         let long_line = "A".repeat(73);
         let body = format!("short line\n{}", long_line);
         let result = validate_body(&body);
-        assert!(matches!(result, Err(BodyError::LineTooLong { line_number: 2, .. })));
+        assert!(matches!(
+            result,
+            Err(BodyError::LineTooLong { line_number: 2, .. })
+        ));
     }
 
     #[test]

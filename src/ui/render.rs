@@ -1,5 +1,4 @@
-use colored::Colorize;
-use crate::logic::model::CommitMessageEntity;
+use crate::prelude::*;
 
 /// 将 commit message 渲染为终端可读的预览文本
 pub fn render_colored_preview(msg: &CommitMessageEntity) -> String {
@@ -8,7 +7,8 @@ pub fn render_colored_preview(msg: &CommitMessageEntity) -> String {
 
     let mut parts = vec![format!("{} {}", type_label, title)];
 
-    if let Some(body) = &msg.body && !body.trim().is_empty()
+    if let Some(body) = &msg.body
+        && !body.trim().is_empty()
     {
         parts.push(String::new());
         parts.push(body.clone());
