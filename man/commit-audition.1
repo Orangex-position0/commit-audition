@@ -1,0 +1,225 @@
+.TH COMMIT-AUDITION 1 "2026-04-23" "commit-audition" "User Commands"
+.SH NAME
+commit-audition \- interactive Git commit message generator
+.SH SYNOPSIS
+.B commit-audition
+[\fIOPTIONS\fR]
+.PP
+.B commit-audition validate
+\fIFILE\fR
+.PP
+.B commit-audition hook install\fR|\fBuninstall
+.SH DESCRIPTION
+.B commit-audition
+is an interactive command-line tool that helps you write Git commit messages following the Conventional Commits specification.
+.PP
+It supports three modes of operation:
+.TP
+\(bu
+Interactive mode (default) \- guided step-by-step commit message creation
+.TP
+\(bu
+Validate mode \- check an existing commit message for compliance
+.TP
+\(bu
+Hook mode \- install or uninstall a git commit-msg hook
+.PP
+Commit message format:
+.PP
+.RS
+.nf
+<type>: <title>
+
+<body>
+
+#<issue>
+.fi
+.RE
+.SH OPTIONS
+.TP
+.B \-\-template
+Skip interaction and output a template (reserved).
+.SH COMMANDS
+.SS validate \fIFILE\fR
+Validate a commit message file. Use \fB\-\fR to read from stdin (for pipelines/CI).
+.SS hook install
+Install a commit-msg hook into the current repository.
+.SS hook uninstall
+Uninstall the commit-msg hook from the current repository.
+.SH COMMIT TYPES
+The following conventional commit types are supported:
+.TP
+.B feat
+A new feature
+.TP
+.B fix
+A bug fix
+.TP
+.B docs
+Documentation changes
+.TP
+.B style
+Formatting changes (no code logic change)
+.TP
+.B refactor
+Code refactoring (neither fixes a bug nor adds a feature)
+.TP
+.B tests
+Adding or updating tests
+.TP
+.B chore
+Build process or auxiliary tool changes
+.SH VALIDATION RULES
+.TP
+\(bu
+Title must not be empty
+.TP
+\(bu
+Title display width must be <= 50 characters (CJK characters count as 2)
+.TP
+\(bu
+Title must not end with a period
+.TP
+\(bu
+Body lines must not exceed 72 display characters
+.SH CONFIGURATION
+Configuration file: \fI~/.commit-audition/config.toml\fR
+.SS Options
+.TP
+.B vim_mode
+(boolean, default: false) Enable full-screen TUI interface with vim-style keybindings.
+.TP
+.B editor.command
+(string, optional) Custom editor command, e.g. \fB"code \-\-wait"\fR.
+.TP
+.B editor.extension
+(string, default: "md") File extension for the temporary file opened in custom editor mode.
+.SS Example
+.PP
+.RS
+.nf
+vim_mode = true
+
+[editor]
+command = "code \-\-wait"
+extension = "md"
+.fi
+.RE
+.SS Common Editor Commands
+.TP
+VS Code: \fBcode \-\-wait\fR
+.TP
+Vim: \fBvim\fR
+.TP
+Neovim: \fBnvim\fR
+.TP
+Helix: \fBhx\fR
+.TP
+Sublime Text: \fBsubl \-w\fR
+.SH VIM MODE
+When \fBvim_mode = true\fR, the tool launches a full-screen TUI interface.
+.SS General Navigation
+.TP
+.B h / \(->-
+Previous step
+.TP
+.B l / \(->
+Next step
+.TP
+.B Ctrl+s
+Skip current step, advance to next
+.SS List Selection (Type / Body Editor Mode)
+.TP
+.B j / \(da-
+Move cursor down
+.TP
+.B k / \(ua-
+Move cursor up
+.TP
+.B Enter
+Confirm selection and advance
+.TP
+.B /
+Enter search mode
+.TP
+.B Esc
+Exit search, then quit (cascading)
+.TP
+.B q
+Quit
+.SS Text Input (Title / Issue Number)
+.TP
+.B Any character
+Type character
+.TP
+.B Backspace
+Delete last character
+.TP
+.B Enter
+Confirm and advance
+.TP
+.B Esc
+Clear input, then quit (cascading)
+.SS Search Mode (activated with \fB/\fR in list steps)
+.TP
+.B Any character
+Append to search query
+.TP
+.B Backspace
+Delete last search character
+.TP
+.B Enter
+Confirm current selection and exit search
+.TP
+.B Esc
+Exit search mode
+.SS Preview & Confirm
+.TP
+.B y / Enter
+Confirm and output commit message
+.TP
+.B n
+Return to first step to re-edit
+.TP
+.B q / Esc
+Cancel and quit
+.SS Esc Cascading Behavior
+.PP
+Pressing \fBEsc\fR responds in the following priority order:
+.TP
+1.
+List steps: exit search first, then quit
+.TP
+2.
+Input steps: clear input first, then quit
+.TP
+3.
+Preview step: quit immediately
+.SH EXAMPLES
+Start interactive commit message creation:
+.PP
+.RS
+.nf
+$ commit-audition
+.fi
+.RE
+.PP
+Validate a commit message from stdin:
+.PP
+.RS
+.nf
+$ echo "feat: add login page" | commit-audition validate -
+.fi
+.RE
+.PP
+Install the git hook:
+.PP
+.RS
+.nf
+$ commit-audition hook install
+.fi
+.RE
+.SH SEE ALSO
+.BR git (1),
+.BR git-commit (1),
+Conventional Commits: \fIhttps://www.conventionalcommits.org/\fR

@@ -1,0 +1,225 @@
+.TH COMMIT-AUDITION 1 "2026-04-23" "commit-audition" "用户命令"
+.SH NAME
+commit-audition \- 交互式 Git commit message 生成工具
+.SH SYNOPSIS
+.B commit-audition
+[\fI选项\fR]
+.PP
+.B commit-audition validate
+\fI文件\fR
+.PP
+.B commit-audition hook install\fR|\fBuninstall
+.SH DESCRIPTION
+.B commit-audition
+是一个交互式命令行工具，帮助你按照 Conventional Commits 规范编写 Git commit message。
+.PP
+支持三种运行模式：
+.TP
+\(bu
+交互模式（默认）\- 引导式分步创建 commit message
+.TP
+\(bu
+校验模式 \- 检查已有的 commit message 是否符合规范
+.TP
+\(bu
+Hook 模式 \- 安装或卸载 git commit-msg 钩子
+.PP
+Commit message 格式：
+.PP
+.RS
+.nf
+<类型>: <标题>
+
+<正文>
+
+#<issue>
+.fi
+.RE
+.SH 选项
+.TP
+.B \-\-template
+跳过交互，直接输出模板（预留功能）。
+.SH 命令
+.SS validate \fI文件\fR
+校验 commit message 文件。使用 \fB\-\fR 从 stdin 读取（用于管道/CI 场景）。
+.SS hook install
+在当前仓库安装 commit-msg 钩子。
+.SS hook uninstall
+卸载当前仓库的 commit-msg 钩子。
+.SH 提交类型
+支持以下 Conventional Commits 类型：
+.TP
+.B feat
+新功能
+.TP
+.B fix
+修复 bug
+.TP
+.B docs
+文档变更
+.TP
+.B style
+格式调整（不影响代码运行）
+.TP
+.B refactor
+重构（既非修复 bug 也非新增功能）
+.TP
+.B tests
+新增或更新测试
+.TP
+.B chore
+构建过程或辅助工具的变更
+.SH 校验规则
+.TP
+\(bu
+标题不能为空
+.TP
+\(bu
+标题显示宽度不超过 50 字符（中文占 2 宽度）
+.TP
+\(bu
+标题不能以句号结尾
+.TP
+\(bu
+正文每行不超过 72 显示字符
+.SH 配置
+配置文件路径：\fI~/.commit-audition/config.toml\fR
+.SS 配置项
+.TP
+.B vim_mode
+（布尔值，默认：false）启用全屏 TUI 界面及 vim 风格快捷键。
+.TP
+.B editor.command
+（字符串，可选）自定义编辑器命令，如 \fB"code \-\-wait"\fR。
+.TP
+.B editor.extension
+（字符串，默认："md"）自定义编辑器模式下临时文件的扩展名。
+.SS 示例
+.PP
+.RS
+.nf
+vim_mode = true
+
+[editor]
+command = "code \-\-wait"
+extension = "md"
+.fi
+.RE
+.SS 常用编辑器命令
+.TP
+VS Code: \fBcode \-\-wait\fR
+.TP
+Vim: \fBvim\fR
+.TP
+Neovim: \fBnvim\fR
+.TP
+Helix: \fBhx\fR
+.TP
+Sublime Text: \fBsubl \-w\fR
+.SH VIM 模式
+设置 \fBvim_mode = true\fR 后，启动全屏 TUI 界面。
+.SS 通用导航
+.TP
+.B h / \(->-
+上一步
+.TP
+.B l / \(->
+下一步
+.TP
+.B Ctrl+s
+跳过当前步骤，进入下一步
+.SS 列表选择（类型 / 正文编辑方式）
+.TP
+.B j / \(da-
+向下移动光标
+.TP
+.B k / \(ua-
+向上移动光标
+.TP
+.B Enter
+确认选择并进入下一步
+.TP
+.B /
+进入搜索模式
+.TP
+.B Esc
+退出搜索 → 退出程序（级联）
+.TP
+.B q
+退出程序
+.SS 文本输入（标题 / Issue 编号）
+.TP
+.B 任意字符
+输入字符
+.TP
+.B Backspace
+删除末尾字符
+.TP
+.B Enter
+确认并进入下一步
+.TP
+.B Esc
+清空输入 → 退出程序（级联）
+.SS 搜索模式（列表中按 \fB/\fR 激活）
+.TP
+.B 任意字符
+追加搜索关键词
+.TP
+.B Backspace
+删除末尾搜索字符
+.TP
+.B Enter
+确认当前选中项并退出搜索
+.TP
+.B Esc
+退出搜索模式
+.SS 预览确认
+.TP
+.B y / Enter
+确认输出 commit message
+.TP
+.B n
+返回第一步重新编辑
+.TP
+.B q / Esc
+取消并退出程序
+.SS Esc 级联行为
+.PP
+按下 \fBEsc\fR 时，按以下顺序依次响应：
+.TP
+1.
+列表步骤：先退出搜索，再退出程序
+.TP
+2.
+输入步骤：先清空输入，再退出程序
+.TP
+3.
+预览步骤：直接退出程序
+.SH 示例
+启动交互式 commit message 创建：
+.PP
+.RS
+.nf
+$ commit-audition
+.fi
+.RE
+.PP
+从 stdin 校验 commit message：
+.PP
+.RS
+.nf
+$ echo "feat: add login page" | commit-audition validate -
+.fi
+.RE
+.PP
+安装 git hook：
+.PP
+.RS
+.nf
+$ commit-audition hook install
+.fi
+.RE
+.SH 参见
+.BR git (1),
+.BR git-commit (1),
+Conventional Commits: \fIhttps://www.conventionalcommits.org/\fR
