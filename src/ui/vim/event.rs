@@ -1,8 +1,8 @@
-use std::time::Duration;
-use crossterm::event;
-use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use crate::prelude::{CommitTagType, EditorMode};
 use crate::ui::vim::app::{App, Step};
+use crossterm::event;
+use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
+use std::time::Duration;
 
 /// 事件处理
 /// 轮询终端事件（仅响应 Press 事件，忽略 Release/Repeat）
@@ -51,13 +51,21 @@ pub fn handle_key(key: KeyEvent, app: &mut App) {
 fn handle_down(app: &mut App) {
     match app.step {
         Step::SelectType => {
-            let max = if app.searching { filtered_type_count(app) } else { 7 };
+            let max = if app.searching {
+                filtered_type_count(app)
+            } else {
+                7
+            };
             if app.selected_type_index < max.saturating_sub(1) {
                 app.selected_type_index += 1;
             }
         }
         Step::SelectBody => {
-            let max = if app.searching { filtered_body_count(app) } else { 3 };
+            let max = if app.searching {
+                filtered_body_count(app)
+            } else {
+                3
+            };
             if app.selected_body_index < max.saturating_sub(1) {
                 app.selected_body_index += 1;
             }
@@ -221,8 +229,7 @@ fn filtered_type_count(app: &App) -> usize {
     CommitTagType::ALL
         .iter()
         .filter(|t| {
-            t.as_str().contains(&app.filter_text)
-                || t.get_description().contains(&app.filter_text)
+            t.as_str().contains(&app.filter_text) || t.get_description().contains(&app.filter_text)
         })
         .count()
 }
@@ -239,8 +246,8 @@ fn filtered_body_count(app: &App) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
     use super::*;
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
     fn key(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::NONE)

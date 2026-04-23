@@ -1,20 +1,20 @@
+use crate::prelude::{CommitTagType, EditorMode};
+use crate::ui::vim::app::{App, Step};
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::prelude::{Color, Direction};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph, Wrap};
-use crate::prelude::{CommitTagType, EditorMode};
-use crate::ui::vim::app::{App, Step};
 
 /// 渲染模块
 pub fn render(f: &mut Frame, app: &App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(1),  // 步骤栏
-            Constraint::Min(1),     // 内容区
-            Constraint::Length(2),  // 底部提示栏
+            Constraint::Length(1), // 步骤栏
+            Constraint::Min(1),    // 内容区
+            Constraint::Length(2), // 底部提示栏
         ])
         .split(f.area());
 
@@ -36,9 +36,7 @@ fn render_step_bar(f: &mut Frame, app: &App, area: Rect) {
             } else {
                 Style::default().fg(Color::DarkGray)
             };
-            vec![
-                Span::styled(format!(" [{}] ", step.label()), style),
-            ]
+            vec![Span::styled(format!(" [{}] ", step.label()), style)]
         })
         .collect();
 
@@ -77,15 +75,20 @@ fn render_select_type(f: &mut Frame, app: &App, area: Rect) {
             if app.filter_text.is_empty() {
                 return true;
             }
-            t.as_str().contains(&app.filter_text)
-                || t.get_description().contains(&app.filter_text)
+            t.as_str().contains(&app.filter_text) || t.get_description().contains(&app.filter_text)
         })
         .enumerate()
         .map(|(i, t)| {
-            let prefix = if i == app.selected_type_index { "▸ " } else { "  " };
+            let prefix = if i == app.selected_type_index {
+                "▸ "
+            } else {
+                "  "
+            };
             let content = format!("{}{} - {}", prefix, t.as_str(), t.get_description());
             let style = if i == app.selected_type_index {
-                Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD)
             } else {
                 Style::default()
             };
@@ -93,8 +96,11 @@ fn render_select_type(f: &mut Frame, app: &App, area: Rect) {
         })
         .collect();
 
-    let list = List::new(items)
-        .block(Block::default().title("选择 commit 类型").borders(Borders::ALL));
+    let list = List::new(items).block(
+        Block::default()
+            .title("选择 commit 类型")
+            .borders(Borders::ALL),
+    );
 
     f.render_widget(list, area);
 }
@@ -105,16 +111,15 @@ fn render_input_title(f: &mut Frame, app: &App, area: Rect) {
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(3),
-            Constraint::Length(1),  // 宽度计数器
+            Constraint::Length(1), // 宽度计数器
         ])
         .split(area);
 
-    let input = Paragraph::new(app.title.as_str())
-        .block(
-            Block::default()
-                .title("输入 commit 标题 (命令式，首字母大写，<= 50 字符)")
-                .borders(Borders::ALL),
-        );
+    let input = Paragraph::new(app.title.as_str()).block(
+        Block::default()
+            .title("输入 commit 标题 (命令式，首字母大写，<= 50 字符)")
+            .borders(Borders::ALL),
+    );
 
     f.render_widget(input, chunks[0]);
 
@@ -122,8 +127,7 @@ fn render_input_title(f: &mut Frame, app: &App, area: Rect) {
     use unicode_width::UnicodeWidthStr;
     let width = UnicodeWidthStr::width(app.title.as_str());
     let color = if width > 50 { Color::Red } else { Color::White };
-    let counter = Paragraph::new(format!("宽度: {}/50", width))
-        .style(Style::default().fg(color));
+    let counter = Paragraph::new(format!("宽度: {}/50", width)).style(Style::default().fg(color));
     f.render_widget(counter, chunks[1]);
 }
 
@@ -139,10 +143,16 @@ fn render_select_body(f: &mut Frame, app: &App, area: Rect) {
         })
         .enumerate()
         .map(|(i, m)| {
-            let prefix = if i == app.selected_body_index { "▸ " } else { "  " };
+            let prefix = if i == app.selected_body_index {
+                "▸ "
+            } else {
+                "  "
+            };
             let content = format!("{}{}", prefix, m.display_label());
             let style = if i == app.selected_body_index {
-                Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD)
             } else {
                 Style::default()
             };
@@ -150,20 +160,22 @@ fn render_select_body(f: &mut Frame, app: &App, area: Rect) {
         })
         .collect();
 
-    let list = List::new(items)
-        .block(Block::default().title("选择正文编辑方式").borders(Borders::ALL));
+    let list = List::new(items).block(
+        Block::default()
+            .title("选择正文编辑方式")
+            .borders(Borders::ALL),
+    );
 
     f.render_widget(list, area);
 }
 
 /// 步骤 4：Issue 输入
 fn render_input_issue(f: &mut Frame, app: &App, area: Rect) {
-    let input = Paragraph::new(app.issue_num.as_str())
-        .block(
-            Block::default()
-                .title("输入 issue 编号（可选，留空跳过）")
-                .borders(Borders::ALL),
-        );
+    let input = Paragraph::new(app.issue_num.as_str()).block(
+        Block::default()
+            .title("输入 issue 编号（可选，留空跳过）")
+            .borders(Borders::ALL),
+    );
     f.render_widget(input, area);
 }
 
@@ -188,12 +200,20 @@ fn render_preview(f: &mut Frame, app: &App, area: Rect) {
         )),
         Line::from(""),
         Line::from(vec![
-        Span::styled(type_str, Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
-        Span::styled(
-            format!(" {}", entity.title),
-            Style::default().fg(Color::White).add_modifier(Modifier::BOLD),
-        ),
-    ])];
+            Span::styled(
+                type_str,
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::styled(
+                format!(" {}", entity.title),
+                Style::default()
+                    .fg(Color::White)
+                    .add_modifier(Modifier::BOLD),
+            ),
+        ]),
+    ];
     if let Some(body) = &entity.body {
         lines.push(Line::from(""));
         for line in body.lines() {
@@ -205,7 +225,9 @@ fn render_preview(f: &mut Frame, app: &App, area: Rect) {
         lines.push(Line::from(""));
         lines.push(Line::from(Span::styled(
             format!("#{}", issue),
-            Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
         )));
     }
 

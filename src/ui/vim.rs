@@ -6,9 +6,11 @@ use std::io::stdout;
 
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use crossterm::execute;
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
-use ratatui::backend::CrosstermBackend;
+use crossterm::terminal::{
+    EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
+};
 use ratatui::Terminal;
+use ratatui::backend::CrosstermBackend;
 
 use crate::logic::config::load_config;
 use crate::prelude::{CommitMessageEntity, EditorMode};
@@ -19,8 +21,7 @@ pub fn run_vim_prompt() -> Option<CommitMessageEntity> {
     // 初始化终端
     enable_raw_mode().expect("无法启用原始模式");
     let mut stdout = stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)
-        .expect("无法切换到备选屏幕");
+    execute!(stdout, EnterAlternateScreen, EnableMouseCapture).expect("无法切换到备选屏幕");
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend).expect("无法创建终端");
 
@@ -53,11 +54,11 @@ pub fn run_vim_prompt() -> Option<CommitMessageEntity> {
                 EditorMode::CustomEditor => {
                     let config = load_config();
                     match &config.editor.command {
-                        Some(cmd) => {
-                            editor::edit_custom_editor(cmd, &config.editor.extension)
-                        }
+                        Some(cmd) => editor::edit_custom_editor(cmd, &config.editor.extension),
                         None => {
-                            eprintln!("配置文件中未指定编辑器命令，请编辑 ~/.commit-audition/config.toml");
+                            eprintln!(
+                                "配置文件中未指定编辑器命令，请编辑 ~/.commit-audition/config.toml"
+                            );
                             None
                         }
                     }
@@ -98,9 +99,5 @@ pub fn run_vim_prompt() -> Option<CommitMessageEntity> {
     terminal.show_cursor().expect("无法显示光标");
 
     // 返回结果
-    if app.confirmed {
-        app.to_entity()
-    } else {
-        None
-    }
+    if app.confirmed { app.to_entity() } else { None }
 }
