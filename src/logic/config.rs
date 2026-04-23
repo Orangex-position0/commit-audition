@@ -7,6 +7,10 @@ pub struct AppConfig {
     /// 编辑器配置
     #[serde(default)]
     pub editor: EditorConfig,
+
+    /// 是否启用 vim 模式
+    #[serde(default)]
+    pub vim_mode: bool,
 }
 
 /// 编辑器配置

@@ -1,3 +1,4 @@
 pub mod editor;
 pub mod prompt;
-mod render;
+pub mod render;
+pub mod vim;

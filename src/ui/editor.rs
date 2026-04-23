@@ -8,7 +8,7 @@ use crate::logic::config::load_config;
 use crate::prelude::*;
 
 /// 在终端中逐行输入正文，输入空行结束
-fn edit_terminal_inline() -> Option<Option<String>> {
+pub fn edit_terminal_inline() -> Option<Option<String>> {
     println!("{}", "逐行输入正文，输入空行结束: ".yellow());
 
     let mut lines: Vec<String> = Vec::new();
@@ -49,7 +49,7 @@ fn edit_terminal_inline() -> Option<Option<String>> {
 }
 
 /// 使用系统默认编辑器
-fn edit_default_editor() -> Option<Option<String>> {
+pub fn edit_default_editor() -> Option<Option<String>> {
     let editor_hint = detect_default_editor();
 
     match editor_hint {
@@ -101,7 +101,7 @@ fn edit_default_editor() -> Option<Option<String>> {
 }
 
 /// 使用自定义编辑器
-fn edit_custom_editor(command: &str, extension: &str) -> Option<Option<String>> {
+pub fn edit_custom_editor(command: &str, extension: &str) -> Option<Option<String>> {
     let mut temp = NamedTempFile::new().expect("无法创建临时文件");
 
     writeln!(temp, "# 输入正文内容，保存退出即可").ok()?;
