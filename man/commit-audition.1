@@ -117,8 +117,8 @@ Helix: \fBhx\fR
 .TP
 Sublime Text: \fBsubl \-w\fR
 .SH VIM MODE
-When \fBvim_mode = true\fR, the tool launches a full-screen TUI interface.
-.SS General Navigation
+When \fBvim_mode = true\fR, the tool launches a full-screen TUI interface with a lazygit-style view/edit mode split. In view mode, vim keys act as shortcuts. In edit mode, all keys type as regular text; press \fBEsc\fR to return to view mode.
+.SS General Navigation (View Mode)
 .TP
 .B h / \(->-
 Previous step
@@ -126,15 +126,21 @@ Previous step
 .B l / \(->
 Next step
 .TP
+.B 1\-5
+Jump directly to step 1-5
+.TP
 .B Ctrl+s
-Skip current step, advance to next
+Advance to next step (resets edit mode)
+.TP
+.B q
+Quit
 .SS List Selection (Type / Body Editor Mode)
 .TP
 .B j / \(da-
-Move cursor down
+Move cursor down (wraps around)
 .TP
 .B k / \(ua-
-Move cursor up
+Move cursor up (wraps around)
 .TP
 .B Enter
 Confirm selection and advance
@@ -147,19 +153,39 @@ Exit search, then quit (cascading)
 .TP
 .B q
 Quit
-.SS Text Input (Title / Issue Number)
+.SS Text Input \(em View Mode (Title / Issue Number)
+.TP
+.B Enter
+Enter edit mode
+.TP
+.B h / l
+Navigate steps
+.TP
+.B 1\-5
+Jump to step
+.TP
+.B q
+Quit
+.TP
+.B Esc
+Clear input (if non-empty), then quit (if empty)
+.SS Text Input \(em Edit Mode (Title / Issue Number)
 .TP
 .B Any character
-Type character
+Type character (including h/j/k/l/q/y/n)
 .TP
 .B Backspace
 Delete last character
 .TP
 .B Enter
-Confirm and advance
+Confirm and advance to next step
 .TP
 .B Esc
-Clear input, then quit (cascading)
+Exit edit mode (stay on current step, keep content)
+.PP
+The border turns \fBcyan\fR to indicate edit mode is active.
+.SS Step 3 Dual-Block Layout
+Step 3 shows two blocks: an upper block for editor mode selection (navigable with j/k) and a lower block for read-only body preview.
 .SS Search Mode (activated with \fB/\fR in list steps)
 .TP
 .B Any character
@@ -181,6 +207,9 @@ Confirm and output commit message
 .B n
 Return to first step to re-edit
 .TP
+.B 1\-5
+Jump to step
+.TP
 .B q / Esc
 Cancel and quit
 .SS Esc Cascading Behavior
@@ -188,12 +217,15 @@ Cancel and quit
 Pressing \fBEsc\fR responds in the following priority order:
 .TP
 1.
-List steps: exit search first, then quit
+Edit mode (any step): exit edit mode, keep content
 .TP
 2.
-Input steps: clear input first, then quit
+Search mode (list steps): exit search first, then quit
 .TP
 3.
+Input steps (view mode): clear input (if non-empty), then quit (if empty)
+.TP
+4.
 Preview step: quit immediately
 .SH EXAMPLES
 Start interactive commit message creation:
