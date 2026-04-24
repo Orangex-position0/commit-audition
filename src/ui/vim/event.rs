@@ -16,34 +16,73 @@ pub fn poll_event() -> Option<KeyEvent> {
     None
 }
 
-/// 处理按键事件，修改 APP 状态
+/// 处理按键事件，修改 App 状态
+///
+/// 采用 lazygit 式查看/编辑模式分发：
+/// 1. 全局快捷键（Ctrl+S）优先处理
+/// 2. 编辑模式（editing=true）：所有字符作为文本输入
+/// 3. 查看模式（editing=false）：字符映射为 vim 快捷键
 pub fn handle_key(key: KeyEvent, app: &mut App) {
-    // 全局快捷键
+    // 全局快捷键：Ctrl+S 推进步骤并重置编辑状态
     if key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Char('s') {
+        app.editing = false;
         app.step = app.step.next();
         return;
     }
 
-    match key.code {
-        // 全局导航
-        KeyCode::Char('h') | KeyCode::Left => {
-            app.step = app.step.prev();
+    // 编辑模式：仅处理文本输入、退格、确认和取消
+    if app.editing {
+        match key.code {
+            KeyCode::Char(c) => handle_char(c, app),
+            KeyCode::Backspace => handle_backspace(app),
+            KeyCode::Enter => {
+                app.editing = false;
+                app.step = app.step.next();
+            }
+            KeyCode::Esc => {
+                app.editing = false;
+            }
+            _ => {}
         }
-        KeyCode::Char('l') | KeyCode::Right => {
-            app.step = app.step.next();
-        }
+        return;
+    }
 
-        // 各步骤分别处理
-        KeyCode::Char('j') | KeyCode::Down => handle_down(app),
-        KeyCode::Char('k') | KeyCode::Up => handle_up(app),
+    // 查看模式：vim 快捷键全局生效
+    match key.code {
         KeyCode::Enter => handle_enter(app),
         KeyCode::Esc => handle_esc(app),
-        KeyCode::Char('/') => handle_search_start(app),
-        KeyCode::Char('y') => handle_confirm(app),
-        KeyCode::Char('n') => handle_reedit(app),
-        KeyCode::Char('q') => handle_quit(app),
         KeyCode::Backspace => handle_backspace(app),
-        KeyCode::Char(c) => handle_char(c, app),
+
+        // 方向键：始终作为导航
+        KeyCode::Left => {
+            app.step = app.step.prev();
+        }
+        KeyCode::Right => {
+            app.step = app.step.next();
+        }
+        KeyCode::Down => handle_down(app),
+        KeyCode::Up => handle_up(app),
+
+        // vim 字符快捷键
+        KeyCode::Char(c) => match c {
+            'h' => {
+                app.step = app.step.prev();
+            }
+            'l' => {
+                app.step = app.step.next();
+            }
+            'j' => handle_down(app),
+            'k' => handle_up(app),
+            '/' => handle_search_start(app),
+            'y' => handle_confirm(app),
+            'n' => handle_reedit(app),
+            'q' => handle_quit(app),
+            '1'..='5' => {
+                let idx = (c as usize) - ('1' as usize);
+                app.step = Step::all()[idx];
+            }
+            _ => {}
+        },
         _ => {}
     }
 }
@@ -54,21 +93,23 @@ fn handle_down(app: &mut App) {
             let max = if app.searching {
                 filtered_type_count(app)
             } else {
-                7
+                CommitTagType::ALL.len()
             };
-            if app.selected_type_index < max.saturating_sub(1) {
-                app.selected_type_index += 1;
+            if max == 0 {
+                return;
             }
+            app.selected_type_index = (app.selected_type_index + 1) % max;
         }
         Step::SelectBody => {
             let max = if app.searching {
                 filtered_body_count(app)
             } else {
-                3
+                EditorMode::ALL.len()
             };
-            if app.selected_body_index < max.saturating_sub(1) {
-                app.selected_body_index += 1;
+            if max == 0 {
+                return;
             }
+            app.selected_body_index = (app.selected_body_index + 1) % max;
         }
         _ => {}
     }
@@ -77,14 +118,27 @@ fn handle_down(app: &mut App) {
 fn handle_up(app: &mut App) {
     match app.step {
         Step::SelectType => {
-            if app.selected_type_index > 0 {
-                app.selected_type_index -= 1;
+            let max = if app.searching {
+                filtered_type_count(app)
+            } else {
+                CommitTagType::ALL.len()
+            };
+            if max == 0 {
+                return;
             }
+            // 循环：到顶部后跳回底部
+            app.selected_type_index = (app.selected_type_index + max - 1) % max;
         }
         Step::SelectBody => {
-            if app.selected_body_index > 0 {
-                app.selected_body_index -= 1;
+            let max = if app.searching {
+                filtered_body_count(app)
+            } else {
+                EditorMode::ALL.len()
+            };
+            if max == 0 {
+                return;
             }
+            app.selected_body_index = (app.selected_body_index + max - 1) % max;
         }
         _ => {}
     }
@@ -99,7 +153,7 @@ fn handle_enter(app: &mut App) {
             app.step = app.step.next();
         }
         Step::InputTitle => {
-            app.step = app.step.next();
+            app.editing = true;
         }
         Step::SelectBody => {
             app.body_selected = true;
@@ -107,10 +161,9 @@ fn handle_enter(app: &mut App) {
             app.filter_text.clear();
             let mode = EditorMode::ALL.get(app.selected_body_index).copied();
             app.pending_editor = mode;
-            // 不在此处推进步骤，由事件循环在编辑器完成后处理
         }
         Step::InputIssue => {
-            app.step = app.step.next();
+            app.editing = true;
         }
         Step::Preview => {
             app.confirmed = true;
@@ -211,15 +264,13 @@ fn handle_reedit(app: &mut App) {
     }
 }
 
-/// q 在非输入步骤直接退出（输入步骤中 q 正常输入字符）
+/// q 退出软件
+///
+/// 在 lazygit 模式下仅从查看模式调用（编辑模式中 q 作为字符输入），
+/// 因此无需按步骤区分。
 fn handle_quit(app: &mut App) {
-    match app.step {
-        Step::SelectType | Step::SelectBody | Step::Preview => {
-            app.confirmed = false;
-            app.quit = true;
-        }
-        _ => {}
-    }
+    app.confirmed = false;
+    app.quit = true;
 }
 
 fn filtered_type_count(app: &App) -> usize {
@@ -262,11 +313,13 @@ mod tests {
     #[test]
     fn handle_key_h_l_navigation() {
         let mut app = App::new();
-        app.step = Step::InputTitle;
-        handle_key(key(KeyCode::Char('h')), &mut app);
-        assert_eq!(app.step, Step::SelectType);
+        app.step = Step::SelectType;
         handle_key(key(KeyCode::Char('l')), &mut app);
         assert_eq!(app.step, Step::InputTitle);
+        handle_key(key(KeyCode::Char('h')), &mut app);
+        assert_eq!(app.step, Step::SelectType);
+        handle_key(key(KeyCode::Char('h')), &mut app);
+        assert_eq!(app.step, Step::Preview);
     }
 
     #[test]
@@ -303,6 +356,125 @@ mod tests {
         assert_eq!(app.selected_type_index, 1);
         handle_key(key(KeyCode::Char('k')), &mut app);
         assert_eq!(app.selected_type_index, 0);
+    }
+
+    #[test]
+    fn handle_key_n_y_q_act_as_vim_in_preview() {
+        let mut app = App::new();
+        app.step = Step::Preview;
+
+        // n 在预览步骤触发重新编辑
+        handle_key(key(KeyCode::Char('n')), &mut app);
+        assert_eq!(app.step, Step::SelectType, "n 在预览步骤应回到第一步");
+
+        // y 在预览步骤触发确认
+        app.step = Step::Preview;
+        handle_key(key(KeyCode::Char('y')), &mut app);
+        assert!(app.confirmed, "y 在预览步骤应确认");
+        assert!(app.quit);
+    }
+
+    // --- lazygit 模式：查看/编辑模式 ---
+
+    #[test]
+    fn handle_enter_enters_edit_mode_for_title() {
+        let mut app = App::new();
+        app.step = Step::InputTitle;
+        handle_key(key(KeyCode::Enter), &mut app);
+        assert!(app.editing);
+        assert_eq!(app.step, Step::InputTitle);
+    }
+
+    #[test]
+    fn handle_enter_enters_edit_mode_for_issue() {
+        let mut app = App::new();
+        app.step = Step::InputIssue;
+        handle_key(key(KeyCode::Enter), &mut app);
+        assert!(app.editing);
+        assert_eq!(app.step, Step::InputIssue);
+    }
+
+    #[test]
+    fn edit_mode_enter_exits_and_advances() {
+        let mut app = App::new();
+        app.step = Step::InputTitle;
+        app.editing = true;
+        handle_key(key(KeyCode::Enter), &mut app);
+        assert!(!app.editing);
+        assert_eq!(app.step, Step::SelectBody);
+    }
+
+    #[test]
+    fn edit_mode_esc_exits_without_advancing() {
+        let mut app = App::new();
+        app.step = Step::InputTitle;
+        app.editing = true;
+        handle_key(key(KeyCode::Esc), &mut app);
+        assert!(!app.editing);
+        assert_eq!(app.step, Step::InputTitle);
+    }
+
+    #[test]
+    fn edit_mode_all_chars_are_text_input() {
+        let vim_keys = ['h', 'j', 'k', 'l', 'y', 'n', 'q', '/'];
+        for c in vim_keys {
+            let mut app = App::new();
+            app.step = Step::InputTitle;
+            app.editing = true;
+            handle_key(key(KeyCode::Char(c)), &mut app);
+            assert_eq!(app.title, c.to_string(), "字符 '{c}' 应被输入到标题");
+            assert!(!app.quit, "字符 '{c}' 不应触发退出");
+            assert!(app.editing, "字符 '{c}' 不应退出编辑模式");
+        }
+    }
+
+    #[test]
+    fn edit_mode_q_types_char_not_quit() {
+        let mut app = App::new();
+        app.step = Step::InputTitle;
+        app.editing = true;
+        handle_key(key(KeyCode::Char('q')), &mut app);
+        assert_eq!(app.title, "q");
+        assert!(!app.quit);
+    }
+
+    #[test]
+    fn view_mode_h_navigates_prev() {
+        let mut app = App::new();
+        app.step = Step::InputTitle;
+        app.editing = false;
+        handle_key(key(KeyCode::Char('h')), &mut app);
+        assert_eq!(app.step, Step::SelectType);
+    }
+
+    #[test]
+    fn view_mode_q_quits() {
+        let mut app = App::new();
+        app.step = Step::InputTitle;
+        app.editing = false;
+        handle_key(key(KeyCode::Char('q')), &mut app);
+        assert!(app.quit);
+    }
+
+    #[test]
+    fn view_mode_n_does_nothing_in_input_steps() {
+        let mut app = App::new();
+        app.step = Step::InputTitle;
+        app.editing = false;
+        handle_key(key(KeyCode::Char('n')), &mut app);
+        assert!(!app.quit);
+        assert_eq!(app.step, Step::InputTitle);
+        assert!(app.title.is_empty());
+    }
+
+    #[test]
+    fn ctrl_s_resets_editing_and_advances() {
+        let mut app = App::new();
+        app.step = Step::InputTitle;
+        app.editing = true;
+        handle_key(key_ctrl(KeyCode::Char('s')), &mut app);
+        assert!(!app.editing);
+        assert_eq!(app.step, Step::SelectBody);
     }
 
     // --- handle_confirm / handle_quit ---
@@ -351,15 +523,16 @@ mod tests {
     }
 
     #[test]
-    fn handle_quit_ignored_in_input_steps() {
+    fn handle_quit_works_from_all_steps() {
         let mut app = App::new();
-        app.step = Step::InputTitle;
-        handle_quit(&mut app);
-        assert!(!app.quit);
-
-        app.step = Step::InputIssue;
-        handle_quit(&mut app);
-        assert!(!app.quit);
+        for step in Step::all() {
+            app.step = step;
+            app.quit = false;
+            app.confirmed = false;
+            handle_quit(&mut app);
+            assert!(app.quit, "handle_quit 应从 {step:?} 退出");
+            assert!(!app.confirmed);
+        }
     }
 
     // --- handle_enter ---
@@ -389,14 +562,6 @@ mod tests {
     }
 
     #[test]
-    fn handle_enter_input_issue_advances() {
-        let mut app = App::new();
-        app.step = Step::InputIssue;
-        handle_enter(&mut app);
-        assert_eq!(app.step, Step::Preview);
-    }
-
-    #[test]
     fn handle_enter_preview_sets_quit() {
         let mut app = App::new();
         app.step = Step::Preview;
@@ -407,45 +572,48 @@ mod tests {
     // --- handle_down / handle_up ---
 
     #[test]
-    fn handle_down_clamps_at_bottom() {
+    fn handle_down_wraps_around_in_select_type() {
         let mut app = App::new();
         app.step = Step::SelectType;
-        for _ in 0..20 {
+        // 移到最后一项
+        for _ in 0..CommitTagType::ALL.len() - 1 {
             handle_down(&mut app);
         }
-        assert_eq!(app.selected_type_index, 6);
-    }
-
-    #[test]
-    fn handle_up_clamps_at_top() {
-        let mut app = App::new();
-        app.step = Step::SelectType;
-        app.selected_type_index = 5;
-        for _ in 0..20 {
-            handle_up(&mut app);
-        }
+        assert_eq!(app.selected_type_index, CommitTagType::ALL.len() - 1);
+        // 再按一次，循环回顶部
+        handle_down(&mut app);
         assert_eq!(app.selected_type_index, 0);
     }
 
     #[test]
-    fn handle_down_body_clamps_at_bottom() {
+    fn handle_up_wraps_around_in_select_type() {
         let mut app = App::new();
-        app.step = Step::SelectBody;
-        for _ in 0..20 {
-            handle_down(&mut app);
-        }
-        assert_eq!(app.selected_body_index, 2);
+        app.step = Step::SelectType;
+        // 在顶部按一次，循环到底部
+        handle_up(&mut app);
+        assert_eq!(app.selected_type_index, CommitTagType::ALL.len() - 1);
     }
 
     #[test]
-    fn handle_up_body_clamps_at_top() {
+    fn handle_down_wraps_around_in_select_body() {
         let mut app = App::new();
         app.step = Step::SelectBody;
-        app.selected_body_index = 2;
-        for _ in 0..20 {
-            handle_up(&mut app);
+        for _ in 0..EditorMode::ALL.len() - 1 {
+            handle_down(&mut app);
         }
+        assert_eq!(app.selected_body_index, EditorMode::ALL.len() - 1);
+        // 再按一次，循环回顶部
+        handle_down(&mut app);
         assert_eq!(app.selected_body_index, 0);
+    }
+
+    #[test]
+    fn handle_up_wraps_around_in_select_body() {
+        let mut app = App::new();
+        app.step = Step::SelectBody;
+        // 在顶部按一次，循环到底部
+        handle_up(&mut app);
+        assert_eq!(app.selected_body_index, EditorMode::ALL.len() - 1);
     }
 
     #[test]
@@ -652,5 +820,74 @@ mod tests {
         let mut app = App::new();
         app.filter_text = "Terminal".to_string();
         assert_eq!(filtered_body_count(&app), 1);
+    }
+
+    #[test]
+    fn handle_down_wraps_with_search_filter() {
+        let mut app = App::new();
+        app.step = Step::SelectType;
+        app.searching = true;
+        app.filter_text = "feat".to_string();
+        let count = filtered_type_count(&app);
+        if count > 1 {
+            for _ in 0..count - 1 {
+                handle_down(&mut app);
+            }
+            handle_down(&mut app);
+            assert_eq!(app.selected_type_index, 0);
+        }
+    }
+
+    #[test]
+    fn handle_down_empty_search_result_no_panic() {
+        let mut app = App::new();
+        app.step = Step::SelectType;
+        app.searching = true;
+        app.filter_text = "zzzzz".to_string();
+        handle_down(&mut app);
+        assert_eq!(app.selected_type_index, 0);
+    }
+
+    // --- 数字键 1-5 快速跳转步骤 ---
+
+    #[test]
+    fn number_keys_jump_to_step() {
+        let cases = [
+            ('1', Step::SelectType),
+            ('2', Step::InputTitle),
+            ('3', Step::SelectBody),
+            ('4', Step::InputIssue),
+            ('5', Step::Preview),
+        ];
+        for (ch, expected_step) in cases {
+            let mut app = App::new();
+            app.step = Step::Preview;
+            handle_key(key(KeyCode::Char(ch)), &mut app);
+            assert_eq!(
+                app.step, expected_step,
+                "按 '{ch}' 应跳转到 {expected_step:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn number_keys_in_edit_mode_types_text() {
+        // 编辑模式下数字应作为文本输入
+        let mut app = App::new();
+        app.step = Step::InputTitle;
+        app.editing = true;
+        handle_key(key(KeyCode::Char('1')), &mut app);
+        assert_eq!(app.title, "1");
+        assert_eq!(app.step, Step::InputTitle);
+    }
+
+    #[test]
+    fn number_key_6_and_0_do_nothing() {
+        let mut app = App::new();
+        app.step = Step::SelectType;
+        handle_key(key(KeyCode::Char('0')), &mut app);
+        assert_eq!(app.step, Step::SelectType);
+        handle_key(key(KeyCode::Char('6')), &mut app);
+        assert_eq!(app.step, Step::SelectType);
     }
 }

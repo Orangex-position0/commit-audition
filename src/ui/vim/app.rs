@@ -52,13 +52,13 @@ impl Step {
 pub struct App {
     /// 当前所处的步骤
     pub step: Step,
-    /// 类型选择列表的光标索引
+    /// step1 - 类型选择列表的光标索引
     pub selected_type_index: usize,
     /// 用户是否已确认类型选择
     pub type_selected: bool,
     /// 已输入的 commit 标题
     pub title: String,
-    /// 正文编辑方式列表的光标索引
+    /// step3 - 正文编辑方式列表的光标索引
     pub selected_body_index: usize,
     /// 用户是否已确认正文编辑方式选择
     pub body_selected: bool,
@@ -76,6 +76,8 @@ pub struct App {
     pub quit: bool,
     /// 用户是否在预览步骤确认提交（区分 y 确认 和 q/Esc 取消）
     pub confirmed: bool,
+    /// 是否处于编辑模式
+    pub editing: bool,
 }
 
 impl App {
@@ -94,6 +96,7 @@ impl App {
             pending_editor: None,
             quit: false,
             confirmed: false,
+            editing: false,
         }
     }
 

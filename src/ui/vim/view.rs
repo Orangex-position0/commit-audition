@@ -115,10 +115,23 @@ fn render_input_title(f: &mut Frame, app: &App, area: Rect) {
         ])
         .split(area);
 
+    let border_style = if app.editing {
+        Style::default().fg(Color::Cyan)
+    } else {
+        Style::default()
+    };
+
+    let title_text = if app.editing {
+        "输入 commit 标题 [编辑中, 按 esc 退出]"
+    } else {
+        "输入 commit 标题 (按 Enter 开始编辑)"
+    };
+
     let input = Paragraph::new(app.title.as_str()).block(
         Block::default()
-            .title("输入 commit 标题 (命令式，首字母大写，<= 50 字符)")
-            .borders(Borders::ALL),
+            .title(title_text)
+            .borders(Borders::ALL)
+            .border_style(border_style),
     );
 
     f.render_widget(input, chunks[0]);
@@ -133,6 +146,13 @@ fn render_input_title(f: &mut Frame, app: &App, area: Rect) {
 
 /// 步骤 3：正文编辑方式选择
 fn render_select_body(f: &mut Frame, app: &App, area: Rect) {
+    // 上下切分: 选择列表 (60%) + 预览区 (40%)
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Percentage(60), Constraint::Percentage(40)])
+        .split(area);
+
+    // 上方: 编辑方式选择栏
     let items: Vec<ListItem> = EditorMode::ALL
         .iter()
         .filter(|m| {
@@ -165,16 +185,44 @@ fn render_select_body(f: &mut Frame, app: &App, area: Rect) {
             .title("选择正文编辑方式")
             .borders(Borders::ALL),
     );
+    f.render_widget(list, chunks[0]);
 
-    f.render_widget(list, area);
+    // 下方: 正文内容预览
+    let preview_content = match &app.body {
+        Some(text) if !text.trim().is_empty() => {
+            Paragraph::new(text.as_str()).wrap(Wrap { trim: false })
+        }
+        _ => Paragraph::new("尚未编辑正文").style(Style::default().fg(Color::DarkGray)),
+    };
+
+    let preview = preview_content.block(
+        Block::default()
+            .title("正文预览")
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::LightBlue)),
+    );
+    f.render_widget(preview, chunks[1]);
 }
 
 /// 步骤 4：Issue 输入
 fn render_input_issue(f: &mut Frame, app: &App, area: Rect) {
+    let border_style = if app.editing {
+        Style::default().fg(Color::Cyan)
+    } else {
+        Style::default()
+    };
+
+    let title_text = if app.editing {
+        "输入 issue 编号 [编辑中, 按 esc 退出]"
+    } else {
+        "输入 issue 编号 (可选，按 Enter 开始编辑)"
+    };
+
     let input = Paragraph::new(app.issue_num.as_str()).block(
         Block::default()
-            .title("输入 issue 编号（可选，留空跳过）")
-            .borders(Borders::ALL),
+            .title(title_text)
+            .borders(Borders::ALL)
+            .border_style(border_style),
     );
     f.render_widget(input, area);
 }
@@ -244,12 +292,25 @@ fn render_help_bar(f: &mut Frame, app: &App, area: Rect) {
             if app.searching {
                 format!("搜索: {}_ | Esc: 退出搜索 | Enter: 确认", app.filter_text)
             } else {
-                "j/k: 移动 | Enter: 确认 | /: 搜索 | h/l: 切换步骤".to_string()
+                "j/k: 移动 | Enter: 确认 | /: 搜索 | h/l: 切换步骤 | 1-5: 跳转 | q: 退出"
+                    .to_string()
             }
         }
-        Step::InputTitle => "输入标题 | Enter: 确认 | Esc: 清空 | h/l: 切换步骤".to_string(),
-        Step::InputIssue => "输入 issue | Enter: 确认 | Ctrl+s: 跳过 | h/l: 切换步骤".to_string(),
-        Step::Preview => "y/Enter: 确认输出 | n: 重新编辑 | q/Esc: 退出".to_string(),
+        Step::InputTitle => {
+            if app.editing {
+                "自由输入 | Enter: 确认 | Esc: 取消编辑".to_string()
+            } else {
+                "Enter: 编辑 | h/l: 切换步骤 | 1-5: 跳转 | q: 退出".to_string()
+            }
+        }
+        Step::InputIssue => {
+            if app.editing {
+                "自由输入 | Enter: 确认 | Esc: 取消编辑".to_string()
+            } else {
+                "Enter: 编辑 | Ctrl+s: 跳过 | h/l: 切换步骤 | 1-5: 跳转 | q: 退出".to_string()
+            }
+        }
+        Step::Preview => "y/Enter: 确认输出 | n: 重新编辑 | 1-5: 跳转 | q/Esc: 退出".to_string(),
     };
 
     let paragraph = Paragraph::new(help_text)
@@ -262,7 +323,6 @@ fn render_help_bar(f: &mut Frame, app: &App, area: Rect) {
 mod tests {
     use super::*;
     use crate::ui::vim::app::App;
-
     // --- is_step_completed ---
 
     #[test]
