@@ -219,10 +219,8 @@ fn handle_search_start(app: &mut App) {
 
 fn handle_char(c: char, app: &mut App) {
     match app.step {
-        Step::SelectType | Step::SelectBody => {
-            if app.searching {
-                app.filter_text.push(c);
-            }
+        Step::SelectType | Step::SelectBody if app.searching => {
+            app.filter_text.push(c);
         }
         Step::InputTitle => {
             app.title.push(c);
@@ -236,10 +234,8 @@ fn handle_char(c: char, app: &mut App) {
 
 fn handle_backspace(app: &mut App) {
     match app.step {
-        Step::SelectType | Step::SelectBody => {
-            if app.searching {
-                app.filter_text.pop();
-            }
+        Step::SelectType | Step::SelectBody if app.searching => {
+            app.filter_text.pop();
         }
         Step::InputTitle => {
             app.title.pop();
