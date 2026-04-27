@@ -1,128 +1,160 @@
 # commit-audition
 
-交互式 Git Commit Message 生成与校验工具，让每一次提交都符合 [Conventional Commits](https://www.conventionalcommits.org/) 规范。
+Interactive Git Commit Message generator and validator following [Conventional Commits](https://www.conventionalcommits.org/).
 
-[English Version](README.en.md)
+[中文文档](docs/README.zh-CN.md)
 
-## 特性
+## Features
 
-- **交互式生成** — 通过引导式问答，逐步收集 type / title / body / issue，零记忆成本
-- **实时校验** — 标题行宽 ≤50、正文行宽 ≤72、禁止句号结尾，输入即校验
-- **三种编辑模式** — 终端内联输入、系统默认编辑器、自定义编辑器（VS Code / Vim 等）
-- **Git Hook 集成** — 一键安装 `commit-msg` hook，在 `git commit` 时自动拦截不合规消息
-- **CJK 友好** — 基于 Unicode 显示宽度计算，中文标题/正文校验准确
-- **着色预览** — 提交前预览带颜色的 commit message，确认无误再输出
+- **Interactive Generation** — Guided prompts collect type / title / body / issue step by step
+- **Real-time Validation** — Title width ≤50, body width ≤72, no trailing periods
+- **Three Editing Modes** — Terminal inline, system default editor, custom editor (VS Code / Vim etc.)
+- **Vim Mode TUI** — Full keyboard-driven TUI interface with ratatui (lazygit-style)
+- **Git Hook Integration** — One-command `commit-msg` hook install/uninstall
+- **CJK Friendly** — Accurate display-width calculation for Chinese characters
+- **Colored Preview** — Review commit message with syntax highlighting before output
 
-## 安装
+## Demo
+
+*Screenshots and GIFs will be added after i18n support (planned for v0.5.0).*
+
+## Installation
+
+### Cargo
 
 ```bash
-git clone https://github.com/<your-username>/commit-audition.git
+cargo install commit-audition
+```
+
+### One-line Installer
+
+```bash
+# macOS / Linux
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/Orangex-position0/commit-audition/releases/latest/download/commit-audition-installer.sh | sh
+
+# Windows PowerShell
+powershell -c "irm https://github.com/Orangex-position0/commit-audition/releases/latest/download/commit-audition-installer.ps1 | iex"
+```
+
+### Build from Source
+
+```bash
+git clone https://github.com/Orangex-position0/commit-audition.git
 cd commit-audition
 cargo build --release
 ```
 
-编译产物位于 `target/release/commit-audition`，可将其加入 `PATH` 或复制到 `/usr/local/bin`。
+The binary is at `target/release/commit-audition`.
 
-## 快速开始
+## Usage
 
-### 交互式生成 Commit Message
+### Interactive Generation
 
 ```bash
 commit-audition
 ```
 
-工具将引导你完成以下步骤：
+The tool guides you through:
 
-1. 选择 commit 类型（feat / fix / docs / style / refactor / tests / chore）
-2. 输入标题（命令式语气，首字母大写，≤50 字符）
-3. 选择是否添加正文 → 选择编辑方式 → 输入正文
-4. 选择是否关联 Issue
-5. 预览确认 → 输出纯文本
+1. Select commit type (feat / fix / docs / style / refactor / tests / chore)
+2. Enter title (imperative mood, ≤50 display width)
+3. Choose body editing mode → enter body
+4. Optionally link an Issue number
+5. Preview and confirm → output plain text
 
-### 校验已有 Commit Message
+### Validate Existing Messages
 
 ```bash
-# 校验文件
+# Validate a file
 commit-audition validate .git/COMMIT_EDITMSG
 
-# 从 stdin 读取（CI 场景）
+# From stdin (CI scenarios)
 echo "feat: Add feature" | commit-audition validate -
 ```
 
-### 安装 Git Hook
+### Git Hook
 
 ```bash
-# 安装 commit-msg hook
+# Install commit-msg hook
 commit-audition hook install
 
-# 卸载
+# Uninstall
 commit-audition hook uninstall
 ```
 
-安装后，每次 `git commit` 都会自动校验 commit message，不合规将被拦截。
+## Configuration
 
-## 配置
-
-配置文件：`~/.commit-audition/config.toml`
+Config file: `~/.commit-audition/config.toml`
 
 ```toml
+# Enable vim mode TUI interface
+vim_mode = true
+
 [editor]
-command = "code --wait"    # 自定义编辑器命令
-extension = "md"            # 临时文件扩展名
+command = "code --wait"    # Custom editor command
+extension = "md"            # Temp file extension
 ```
 
-详见 [配置文档](docs/note/Configuration.md)。
+See [Configuration Guide](docs/note/Configuration.md) for details.
 
-## Commit Message 格式
+## Recommended Alias
+
+You can set a shorter alias for convenience:
+
+| Shell | Config File | Command |
+|---|---|---|
+| bash | `~/.bashrc` | `alias cmt='commit-audition'` |
+| zsh | `~/.zshrc` | `alias cmt='commit-audition'` |
+| fish | `~/.config/fish/config.fish` | `alias cmt commit-audition` |
+| PowerShell | `$PROFILE` | `Set-Alias -Name cmt -Value commit-audition` |
+
+After setup, use `cmt` instead of `commit-audition`:
+
+```bash
+cmt          # Start interactive generation
+cmt validate # Validate mode
+```
+
+## Commit Message Format
 
 ```text
-<type>: <title>           ← 标题行（≤50 字符显示宽度）
-                          ← 空行
-<body>                    ← 正文（每行 ≤72 字符显示宽度，可选）
-                          ← 空行
-#<issue>                  ← Issue 关联（可选）
+<type>: <title>           ← Title line (≤50 display width)
+                          ← Blank line
+<body>                    ← Body (each line ≤72 display width, optional)
+                          ← Blank line
+#<issue>                  ← Issue reference (optional)
 ```
 
-### 合法类型
+### Valid Types
 
-| 类型 | 说明 |
+| Type | Description |
 |---|---|
-| `feat` | 新功能 |
-| `fix` | 修补 bug |
-| `docs` | 文档改变 |
-| `style` | 格式（不影响代码运行的变动） |
-| `refactor` | 重构 |
-| `tests` | 增加测试 |
-| `chore` | 构建过程或辅助工具的变动 |
+| `feat` | New feature |
+| `fix` | Bug fix |
+| `docs` | Documentation changes |
+| `style` | Formatting (no code changes) |
+| `refactor` | Code refactoring |
+| `tests` | Adding tests |
+| `chore` | Build or tooling changes |
 
-## 项目架构
+## Architecture
 
-采用 CLI 经典四层极简架构：
-
-| 层 | 目录 | 职责 |
+| Layer | Directory | Responsibility |
 |---|---|---|
-| **CLI Layer** | `cli/` | 命令行参数解析与标准化 |
-| **Logic Layer** | `logic/` | 纯业务逻辑：模型、校验、组装 |
-| **Integration Layer** | `integration/` | 副作用边界（预留） |
-| **UI Layer** | `ui/` | 终端交互：问答、编辑器、渲染 |
+| **CLI Layer** | `cli/` | Command-line argument parsing |
+| **Logic Layer** | `logic/` | Pure business logic: models, validation, building |
+| **Integration Layer** | `integration/` | Side-effect boundary (reserved) |
+| **UI Layer** | `ui/` | Terminal interaction: prompts, editor, rendering |
 
-详见 [架构文档](docs/note/architecture.md)。
+## Documentation
 
-## 文档
-
-| 文档 | 说明 |
+| Document | Description |
 |---|---|
-| [架构总览](docs/note/architecture.md) | 四层架构设计与数据流 |
-| [CLI Layer](docs/note/Architecture-CLI%20Layer.md) | 命令行参数定义 |
-| [Logic Layer](docs/note/Architecture-Logic%20Layer.md) | 业务逻辑与校验规则 |
-| [UI Layer](docs/note/Architecture-UI%20Layer.md) | 终端交互设计 |
-| [Integration Layer](docs/note/Architecture-Integration%20Layer.md) | 副作用边界设计 |
-| [配置说明](docs/note/Configuration.md) | 配置文件格式与使用 |
-| [依赖说明](docs/note/dependencies.md) | 依赖选型理由 |
-| [校验策略](docs/note/Commit%20Message%20校验策略.md) | Commit message 校验方案 |
-| [使用指南](docs/Usage.md) | 详细使用文档 |
-| [构建与发布指南](docs/release-guide.md) | cargo-dist + GitHub Actions 自动发布流程 |
+| [Architecture](docs/note/architecture.md) | Four-layer architecture and data flow |
+| [Configuration](docs/note/Configuration.md) | Config file format and usage |
+| [Vim Mode Design](docs/note/vim-mode.md) | Vim mode TUI detailed design |
+| [Release Guide](docs/release-guide.md) | dist + GitHub Actions release workflow |
 
-## 许可证
+## License
 
-MIT
+MIT OR Apache-2.0
