@@ -34,7 +34,7 @@ fn render_step_bar(f: &mut Frame, app: &App, area: Rect) {
             } else if is_step_completed(app, step) {
                 Style::default().fg(Color::Green)
             } else {
-                Style::default().fg(Color::DarkGray)
+                Style::default().fg(Color::Gray)
             };
             vec![Span::styled(format!(" [{}] ", step.label()), style)]
         })
