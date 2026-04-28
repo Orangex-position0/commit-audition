@@ -6,6 +6,7 @@ use ratatui::prelude::{Color, Direction};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph, Wrap};
+use rust_i18n::t;
 
 /// 渲染模块
 pub fn render(f: &mut Frame, app: &App) {
@@ -34,7 +35,7 @@ fn render_step_bar(f: &mut Frame, app: &App, area: Rect) {
             } else if is_step_completed(app, step) {
                 Style::default().fg(Color::Green)
             } else {
-                Style::default().fg(Color::DarkGray)
+                Style::default().fg(Color::Gray)
             };
             vec![Span::styled(format!(" [{}] ", step.label()), style)]
         })
@@ -98,7 +99,7 @@ fn render_select_type(f: &mut Frame, app: &App, area: Rect) {
 
     let list = List::new(items).block(
         Block::default()
-            .title("选择 commit 类型")
+            .title(t!("ui.select_type").to_string())
             .borders(Borders::ALL),
     );
 
@@ -122,9 +123,9 @@ fn render_input_title(f: &mut Frame, app: &App, area: Rect) {
     };
 
     let title_text = if app.editing {
-        "输入 commit 标题 [编辑中, 按 esc 退出]"
+        t!("vim.title_editing").to_string()
     } else {
-        "输入 commit 标题 (按 Enter 开始编辑)"
+        t!("vim.title_viewing").to_string()
     };
 
     let input = Paragraph::new(app.title.as_str()).block(
@@ -140,7 +141,8 @@ fn render_input_title(f: &mut Frame, app: &App, area: Rect) {
     use unicode_width::UnicodeWidthStr;
     let width = UnicodeWidthStr::width(app.title.as_str());
     let color = if width > 50 { Color::Red } else { Color::White };
-    let counter = Paragraph::new(format!("宽度: {}/50", width)).style(Style::default().fg(color));
+    let counter = Paragraph::new(t!("vim.width_counter", width = width).to_string())
+        .style(Style::default().fg(color));
     f.render_widget(counter, chunks[1]);
 }
 
@@ -182,7 +184,7 @@ fn render_select_body(f: &mut Frame, app: &App, area: Rect) {
 
     let list = List::new(items).block(
         Block::default()
-            .title("选择正文编辑方式")
+            .title(t!("vim.select_body_mode").to_string())
             .borders(Borders::ALL),
     );
     f.render_widget(list, chunks[0]);
@@ -192,12 +194,13 @@ fn render_select_body(f: &mut Frame, app: &App, area: Rect) {
         Some(text) if !text.trim().is_empty() => {
             Paragraph::new(text.as_str()).wrap(Wrap { trim: false })
         }
-        _ => Paragraph::new("尚未编辑正文").style(Style::default().fg(Color::DarkGray)),
+        _ => Paragraph::new(t!("vim.body_not_edited").to_string())
+            .style(Style::default().fg(Color::DarkGray)),
     };
 
     let preview = preview_content.block(
         Block::default()
-            .title("正文预览")
+            .title(t!("vim.body_preview").to_string())
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::LightBlue)),
     );
@@ -213,9 +216,9 @@ fn render_input_issue(f: &mut Frame, app: &App, area: Rect) {
     };
 
     let title_text = if app.editing {
-        "输入 issue 编号 [编辑中, 按 esc 退出]"
+        t!("vim.issue_editing").to_string()
     } else {
-        "输入 issue 编号 (可选，按 Enter 开始编辑)"
+        t!("vim.issue_viewing").to_string()
     };
 
     let input = Paragraph::new(app.issue_num.as_str()).block(
@@ -232,9 +235,13 @@ fn render_preview(f: &mut Frame, app: &App, area: Rect) {
     let entity = match app.to_entity() {
         Some(e) => e,
         None => {
-            let warning = Paragraph::new("标题不能为空，请返回步骤 2 补充")
+            let warning = Paragraph::new(t!("vim.preview_title_empty").to_string())
                 .style(Style::default().fg(Color::Red))
-                .block(Block::default().title("预览").borders(Borders::ALL));
+                .block(
+                    Block::default()
+                        .title(t!("vim.step_preview").to_string())
+                        .borders(Borders::ALL),
+                );
             f.render_widget(warning, area);
             return;
         }
@@ -243,7 +250,7 @@ fn render_preview(f: &mut Frame, app: &App, area: Rect) {
     let type_str = format!("{}:", entity.commit_tag_type.as_str());
     let mut lines: Vec<Line> = vec![
         Line::from(Span::styled(
-            "按 y 或 Enter 确认，commit message 将输出到终端",
+            t!("vim.confirm_hint").to_string(),
             Style::default().fg(Color::DarkGray),
         )),
         Line::from(""),
@@ -280,7 +287,11 @@ fn render_preview(f: &mut Frame, app: &App, area: Rect) {
     }
 
     let preview = Paragraph::new(lines)
-        .block(Block::default().title("预览").borders(Borders::ALL))
+        .block(
+            Block::default()
+                .title(t!("vim.step_preview").to_string())
+                .borders(Borders::ALL),
+        )
         .wrap(Wrap { trim: false });
     f.render_widget(preview, area);
 }
@@ -290,27 +301,26 @@ fn render_help_bar(f: &mut Frame, app: &App, area: Rect) {
     let help_text: String = match app.step {
         Step::SelectType | Step::SelectBody => {
             if app.searching {
-                format!("搜索: {}_ | Esc: 退出搜索 | Enter: 确认", app.filter_text)
+                t!("vim.search_help", text = app.filter_text).to_string()
             } else {
-                "j/k: 移动 | Enter: 确认 | /: 搜索 | h/l: 切换步骤 | 1-5: 跳转 | q: 退出"
-                    .to_string()
+                t!("vim.help_browse").to_string()
             }
         }
         Step::InputTitle => {
             if app.editing {
-                "自由输入 | Enter: 确认 | Esc: 取消编辑".to_string()
+                t!("vim.help_title_edit").to_string()
             } else {
-                "Enter: 编辑 | h/l: 切换步骤 | 1-5: 跳转 | q: 退出".to_string()
+                t!("vim.help_title_view").to_string()
             }
         }
         Step::InputIssue => {
             if app.editing {
-                "自由输入 | Enter: 确认 | Esc: 取消编辑".to_string()
+                t!("vim.help_issue_edit").to_string()
             } else {
-                "Enter: 编辑 | Ctrl+s: 跳过 | h/l: 切换步骤 | 1-5: 跳转 | q: 退出".to_string()
+                t!("vim.help_issue_view").to_string()
             }
         }
-        Step::Preview => "y/Enter: 确认输出 | n: 重新编辑 | 1-5: 跳转 | q/Esc: 退出".to_string(),
+        Step::Preview => t!("vim.help_preview").to_string(),
     };
 
     let paragraph = Paragraph::new(help_text)

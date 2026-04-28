@@ -2,6 +2,7 @@ use std::io::Write;
 use std::process::Command;
 
 use dialoguer::Editor;
+use rust_i18n::t;
 use tempfile::NamedTempFile;
 
 use crate::logic::config::load_config;
@@ -9,12 +10,12 @@ use crate::prelude::*;
 
 /// 在终端中逐行输入正文，输入空行结束
 pub fn edit_terminal_inline() -> Option<Option<String>> {
-    println!("{}", "逐行输入正文，输入空行结束: ".yellow());
+    println!("{}", t!("ui.body_line_by_line").to_string().yellow());
 
     let mut lines: Vec<String> = Vec::new();
     loop {
         let line: String = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt(format!("第 {} 行 (留空结束)", lines.len() + 1))
+            .with_prompt(t!("ui.body_line_n", n = lines.len() + 1).to_string())
             .allow_empty(true)
             .interact_text()
             .ok()?;
@@ -41,7 +42,9 @@ pub fn edit_terminal_inline() -> Option<Option<String>> {
         }) => {
             eprintln!(
                 "{}",
-                format!("第 {} 行长度超过 {}，请修改", line_number, max).red()
+                t!("ui.body_line_too_long_err", line = line_number, max = max)
+                    .to_string()
+                    .red()
             );
             None
         }
@@ -54,19 +57,19 @@ pub fn edit_default_editor() -> Option<Option<String>> {
 
     match editor_hint {
         Some(ref name) => {
-            println!("{}", format!("将使用编辑器: {}", name).cyan());
-        }
-        None => {
             println!(
                 "{}",
-                "未检测到 VISUAL 或 EDITOR 环境变量，将使用系统默认编辑器".yellow()
+                t!("terminal.using_editor", name = name).to_string().cyan()
             );
+        }
+        None => {
+            println!("{}", t!("terminal.no_env_editor").to_string().yellow());
         }
     }
 
     let result = Editor::new()
         .extension("md")
-        .edit("# 输入正文内容，保存退出即可\n")
+        .edit(&t!("ui.body_hint_template"))
         .ok()
         .flatten();
 
@@ -87,10 +90,13 @@ pub fn edit_default_editor() -> Option<Option<String>> {
                 }) => {
                     eprintln!(
                         "{}",
-                        format!(
-                            "第 {} 行长度超过 {} (当前 {})，请修改",
-                            line_number, max, width
+                        t!(
+                            "rules.body_line_too_long",
+                            line = line_number,
+                            max = max,
+                            width = width
                         )
+                        .to_string()
                         .red()
                     );
                     None
@@ -102,9 +108,9 @@ pub fn edit_default_editor() -> Option<Option<String>> {
 
 /// 使用自定义编辑器
 pub fn edit_custom_editor(command: &str, extension: &str) -> Option<Option<String>> {
-    let mut temp = NamedTempFile::new().expect("无法创建临时文件");
+    let mut temp = NamedTempFile::new().expect(&t!("terminal.cannot_create_temp"));
 
-    writeln!(temp, "# 输入正文内容，保存退出即可").ok()?;
+    writeln!(temp, "{}", t!("ui.body_hint_template")).ok()?;
     temp.flush().ok()?;
 
     let temp_path = temp.path().with_extension(extension);
@@ -120,7 +126,10 @@ pub fn edit_custom_editor(command: &str, extension: &str) -> Option<Option<Strin
     let status = Command::new(cmd).args(&full_args).status().ok()?;
 
     if !status.success() {
-        eprintln!("{}", "编辑器退出异常".red());
+        eprintln!(
+            "{}",
+            t!("terminal.editor_exited_abnormally").to_string().red()
+        );
         return Some(None);
     }
 
@@ -143,7 +152,14 @@ pub fn edit_custom_editor(command: &str, extension: &str) -> Option<Option<Strin
         }) => {
             eprintln!(
                 "{}",
-                format!("第 {} 行超过 {} 字符（当前 {}）", line_number, max, width).red()
+                t!(
+                    "rules.body_line_too_long",
+                    line = line_number,
+                    max = max,
+                    width = width
+                )
+                .to_string()
+                .red()
             );
             None
         }
@@ -153,7 +169,7 @@ pub fn edit_custom_editor(command: &str, extension: &str) -> Option<Option<Strin
 /// 统一的 body 输入入口
 pub fn input_body() -> Option<Option<String>> {
     let add_body = Confirm::with_theme(&ColorfulTheme::default())
-        .with_prompt("是否添加正文?")
+        .with_prompt(t!("ui.add_body").to_string())
         .default(false)
         .interact()
         .ok()?;
@@ -172,11 +188,11 @@ pub fn input_body() -> Option<Option<String>> {
             match &config.editor.command {
                 Some(cmd) => edit_custom_editor(cmd, &config.editor.extension),
                 None => {
+                    eprintln!("{}", t!("terminal.no_editor_config").to_string().red());
                     eprintln!(
                         "{}",
-                        "配置文件中未指定编辑器命令，请编辑 ~/.commit-audition/config.toml".red()
+                        t!("terminal.editor_config_example").to_string().yellow()
                     );
-                    eprintln!("{}", "示例:\n[editor]\ncommand = \"code --wait\"".yellow());
                     None
                 }
             }
@@ -210,7 +226,7 @@ fn select_editor_mode() -> Option<EditorMode> {
         .collect();
 
     let index = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt("选择编辑方式")
+        .with_prompt(t!("ui.select_editor_mode").to_string())
         .items(&items)
         .default(0)
         .interact()

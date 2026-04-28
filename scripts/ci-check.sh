@@ -18,10 +18,10 @@ run_check() {
     echo -e "${YELLOW}[CHECK]${NC} $name"
     if "$@"; then
         echo -e "${GREEN}[PASS]${NC} $name"
-        pass=$((pass + 1))
+        ((pass++))
     else
         echo -e "${RED}[FAIL]${NC} $name"
-        fail=$((fail + 1))
+        ((fail++))
     fi
 }
 

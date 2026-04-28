@@ -2,7 +2,10 @@
 name = "commit-audition"
 version = "0.3.0"
 edition = "2024"
+rust-version = "1.85.0"
+description = "Interactive Git Commit Message generator and validator following Conventional Commits"
 repository = "https://github.com/Orangex-position0/commit-audition.git"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 clap = { version = "4.5.5", features = ["derive"] }
@@ -15,6 +18,7 @@ serde = { version = "1.0.2", features = ["derive"] }
 tempfile = "3.23.0"
 ratatui = "0.29.0"
 crossterm = "0.28.0"
+rust-i18n = "3"
 
 # The profile that 'dist' will build with
 [profile.dist]
