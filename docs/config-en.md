@@ -6,6 +6,7 @@ Config file path: `~/.commit-audition/config.toml`
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
+| `language` | `string` | `"en"` | UI language, `"en"` for English, `"zh"` for Chinese |
 | `vim_mode` | `bool` | `false` | Enable vim mode (full-screen TUI interface) |
 | `editor.command` | `string?` | `null` | Custom editor command, e.g. `"code --wait"` |
 | `editor.extension` | `string` | `"md"` | File extension for the temporary file |
@@ -13,6 +14,9 @@ Config file path: `~/.commit-audition/config.toml`
 ## Example
 
 ```toml
+# Set UI language
+language = "zh"
+
 # Enable vim mode
 vim_mode = true
 
@@ -22,6 +26,10 @@ extension = "md"
 ```
 
 ## Option Details
+
+### `language`
+
+Sets the UI language. Supported values: `"en"` (English, default), `"zh"` (Chinese). Affects all user-facing text including prompts, type descriptions, error messages, vim mode labels, and hook command output.
 
 ### `vim_mode`
 

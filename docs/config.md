@@ -6,6 +6,7 @@
 
 | 配置项 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
+| `language` | `string` | `"en"` | 界面语言，`"en"` 为英文，`"zh"` 为中文 |
 | `vim_mode` | `bool` | `false` | 是否启用 vim 模式（全屏 TUI 交互） |
 | `editor.command` | `string?` | `null` | 自定义编辑器命令，如 `"code --wait"` |
 | `editor.extension` | `string` | `"md"` | 临时文件的扩展名 |
@@ -13,6 +14,9 @@
 ## 示例
 
 ```toml
+# 设置界面语言
+language = "zh"
+
 # 启用 vim 模式
 vim_mode = true
 
@@ -22,6 +26,10 @@ extension = "md"
 ```
 
 ## 配置项详解
+
+### `language`
+
+设置界面语言。支持 `"en"`（英文，默认）和 `"zh"`（中文）。影响所有用户可见文本，包括交互提示、类型描述、错误消息、vim 模式标签和 hook 命令输出。
 
 ### `vim_mode`
 
