@@ -2,7 +2,7 @@
 name = "commit-audition"
 version = "0.3.0"
 edition = "2024"
-rust-version = "1.85.0"
+rust-version = "1.88.0"
 description = "Interactive Git Commit Message generator and validator following Conventional Commits"
 repository = "https://github.com/Orangex-position0/commit-audition.git"
 license = "MIT OR Apache-2.0"

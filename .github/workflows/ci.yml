@@ -33,16 +33,16 @@ jobs:
         run: cargo test
 
   msrv:
-    name: MSRV Check (1.85.0)
+    name: MSRV Check (1.88.0)
     runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v6
 
-      - name: Install Rust 1.85.0
+      - name: Install Rust 1.88.0
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: "1.85.0"
+          toolchain: "1.88.0"
 
       - name: Cache Cargo artifacts
         uses: Swatinem/rust-cache@v2
