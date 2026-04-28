@@ -40,7 +40,10 @@ fn type_descriptions_english() {
     rust_i18n::set_locale("en");
     assert_eq!(CommitTagType::Feat.get_description(), "A new feature");
     assert_eq!(CommitTagType::Fix.get_description(), "A bug fix");
-    assert_eq!(CommitTagType::Docs.get_description(), "Documentation changes");
+    assert_eq!(
+        CommitTagType::Docs.get_description(),
+        "Documentation changes"
+    );
     assert_eq!(
         CommitTagType::Style.get_description(),
         "Formatting (no code behavior change)"
