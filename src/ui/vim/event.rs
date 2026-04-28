@@ -813,6 +813,7 @@ mod tests {
 
     #[test]
     fn filtered_body_count_with_filter() {
+        rust_i18n::set_locale("en");
         let mut app = App::new();
         app.filter_text = "Terminal".to_string();
         assert_eq!(filtered_body_count(&app), 1);

@@ -2,8 +2,12 @@ use serde::Deserialize;
 use std::path::PathBuf;
 
 /// 用户配置文件
-#[derive(Deserialize, Default)]
+#[derive(Deserialize)]
 pub struct AppConfig {
+    /// 语言设置，默认 "en"
+    #[serde(default = "default_language")]
+    pub language: String,
+
     /// 编辑器配置
     #[serde(default)]
     pub editor: EditorConfig,
@@ -11,6 +15,10 @@ pub struct AppConfig {
     /// 是否启用 vim 模式
     #[serde(default)]
     pub vim_mode: bool,
+}
+
+fn default_language() -> String {
+    "en".to_string()
 }
 
 /// 编辑器配置
@@ -35,6 +43,16 @@ impl Default for EditorConfig {
 
 fn default_extension() -> String {
     "md".to_string()
+}
+
+impl Default for AppConfig {
+    fn default() -> Self {
+        Self {
+            language: default_language(),
+            editor: EditorConfig::default(),
+            vim_mode: false,
+        }
+    }
 }
 
 /// 配置文件路径

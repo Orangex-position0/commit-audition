@@ -7,9 +7,14 @@ use commit_audition::prelude::Colorize;
 use commit_audition::ui::prompt::run_prompt;
 use commit_audition::ui::vim::run_vim_prompt;
 
+rust_i18n::i18n!("locales", fallback = "en");
+
 fn main() {
     let _config = parse_args();
     let app_config = load_config();
+
+    // 根据配置设置语言
+    rust_i18n::set_locale(&app_config.language);
 
     let result = if app_config.vim_mode {
         run_vim_prompt()
@@ -22,7 +27,7 @@ fn main() {
             let output = build_message(&msg);
             println!("\n{}", output);
         }
-        None => println!("{}", "已取消。".yellow()),
+        None => println!("{}", rust_i18n::t!("ui.cancelled").to_string().yellow()),
     }
 }
 
@@ -33,11 +38,20 @@ fn read_content(source: &str) -> String {
         let mut buf = String::new();
         std::io::stdin()
             .read_to_string(&mut buf)
-            .expect("无法从 stdin 读取");
+            .expect(&rust_i18n::t!("terminal.cannot_read_stdin"));
         buf
     } else {
         std::fs::read_to_string(source).unwrap_or_else(|e| {
-            eprintln!("{}", format!("无法读取文件 {}: {}", source, e).red());
+            eprintln!(
+                "{}",
+                rust_i18n::t!(
+                    "terminal.cannot_read_file",
+                    path = source,
+                    error = e.to_string()
+                )
+                .to_string()
+                .red()
+            );
             std::process::exit(1);
         })
     }

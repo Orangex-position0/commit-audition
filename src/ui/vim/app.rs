@@ -1,4 +1,5 @@
 use crate::prelude::{CommitMessageEntity, CommitTagType, EditorMode};
+use rust_i18n::t;
 
 /// APP 状态机
 /// 当前所处的状态步骤
@@ -23,13 +24,13 @@ impl Step {
     }
 
     /// 步骤栏显示标签
-    pub fn label(&self) -> &'static str {
+    pub fn label(&self) -> String {
         match self {
-            Step::SelectType => "1.类型",
-            Step::InputTitle => "2.标题",
-            Step::SelectBody => "3.正文",
-            Step::InputIssue => "4.Issue",
-            Step::Preview => "5.预览",
+            Step::SelectType => t!("vim.step_type").to_string(),
+            Step::InputTitle => t!("vim.step_title").to_string(),
+            Step::SelectBody => t!("vim.step_body").to_string(),
+            Step::InputIssue => t!("vim.step_issue").to_string(),
+            Step::Preview => t!("vim.step_preview").to_string(),
         }
     }
 
@@ -78,6 +79,12 @@ pub struct App {
     pub confirmed: bool,
     /// 是否处于编辑模式
     pub editing: bool,
+}
+
+impl Default for App {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl App {
@@ -145,11 +152,12 @@ mod tests {
 
     #[test]
     fn step_labels() {
-        assert_eq!(Step::SelectType.label(), "1.类型");
-        assert_eq!(Step::InputTitle.label(), "2.标题");
-        assert_eq!(Step::SelectBody.label(), "3.正文");
+        rust_i18n::set_locale("en");
+        assert_eq!(Step::SelectType.label(), "1.Type");
+        assert_eq!(Step::InputTitle.label(), "2.Title");
+        assert_eq!(Step::SelectBody.label(), "3.Body");
         assert_eq!(Step::InputIssue.label(), "4.Issue");
-        assert_eq!(Step::Preview.label(), "5.预览");
+        assert_eq!(Step::Preview.label(), "5.Preview");
     }
 
     #[test]

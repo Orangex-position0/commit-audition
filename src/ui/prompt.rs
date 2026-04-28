@@ -1,17 +1,18 @@
 use crate::prelude::*;
 use crate::ui::editor::input_body;
 use crate::ui::render::render_colored_preview;
+use rust_i18n::t;
 
 /// 交互式问答，逐步收集 commit message 各个部分
 pub fn run_prompt() -> Option<CommitMessageEntity> {
     loop {
         let msg = collect_inputs()?;
 
-        println!("\n{}", "── 预览 ──".green().bold());
+        println!("\n{}", t!("ui.preview").to_string().green().bold());
         println!("{}\n", render_colored_preview(&msg));
 
         let confirmed = Confirm::with_theme(&ColorfulTheme::default())
-            .with_prompt("确认使用这条 commit message?")
+            .with_prompt(t!("ui.confirm_commit").to_string())
             .default(true)
             .interact()
             .unwrap_or(false);
@@ -21,7 +22,7 @@ pub fn run_prompt() -> Option<CommitMessageEntity> {
         }
 
         let redo = Confirm::with_theme(&ColorfulTheme::default())
-            .with_prompt("是否重新编辑?")
+            .with_prompt(t!("ui.re_edit").to_string())
             .default(true)
             .interact()
             .unwrap_or(false);
@@ -55,7 +56,7 @@ fn select_type() -> Option<CommitTagType> {
         .collect();
 
     let index = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt("选择 commit 类型")
+        .with_prompt(t!("ui.select_type").to_string())
         .items(&items)
         .interact()
         .ok()?;
@@ -66,16 +67,15 @@ fn select_type() -> Option<CommitTagType> {
 /// 输入 commit title
 fn input_title() -> Option<String> {
     Input::with_theme(&ColorfulTheme::default())
-        .with_prompt("输入 commit 标题 (命令式预期，首字母大写，<= 50 字符)")
+        .with_prompt(t!("ui.input_title").to_string())
         .validate_with(|input: &String| -> Result<(), String> {
             match validate_title(input) {
                 Ok(_) => Ok(()),
-                Err(TitleError::Empty) => Err("标题不能为空".into()),
-                Err(TitleError::TooLong { width, max }) => Err(format!(
-                    "标题长度超出限制，当前长度为 {}，最大长度为 {}",
-                    width, max
-                )),
-                Err(TitleError::EndsWithPeriod) => Err("标题不能以句号结束".into()),
+                Err(TitleError::Empty) => Err(t!("ui.title_empty_err").to_string()),
+                Err(TitleError::TooLong { width, max }) => {
+                    Err(t!("ui.title_too_long_err", width = width, max = max).to_string())
+                }
+                Err(TitleError::EndsWithPeriod) => Err(t!("ui.title_period_err").to_string()),
             }
         })
         .allow_empty(false)
@@ -86,7 +86,7 @@ fn input_title() -> Option<String> {
 /// 输入 issue number
 fn input_issue() -> Option<Option<u32>> {
     let add_issue = Confirm::with_theme(&ColorfulTheme::default())
-        .with_prompt("是否添加关联 issue?")
+        .with_prompt(t!("ui.add_issue").to_string())
         .default(false)
         .interact()
         .ok()?;
@@ -96,13 +96,13 @@ fn input_issue() -> Option<Option<u32>> {
     }
 
     let num: u32 = Input::with_theme(&ColorfulTheme::default())
-        .with_prompt("输入 issue 编号")
+        .with_prompt(t!("ui.input_issue").to_string())
         .validate_with(|input: &String| -> Result<(), String> {
             input
                 .trim()
                 .parse::<u32>()
                 .map(|_| ())
-                .map_err(|_| "请输入有效的正整数".into())
+                .map_err(|_| t!("ui.issue_invalid").to_string())
         })
         .interact_text()
         .ok()?

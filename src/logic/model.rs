@@ -1,3 +1,5 @@
+use rust_i18n::t;
+
 /// Commit 类型标签枚举
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CommitTagType {
@@ -43,15 +45,15 @@ impl CommitTagType {
     }
 
     /// 选择列表中的显示描述，用于 UI 展示
-    pub fn get_description(&self) -> &'static str {
+    pub fn get_description(&self) -> String {
         match self {
-            CommitTagType::Feat => "新功能 (feature)",
-            CommitTagType::Fix => "修补 bug",
-            CommitTagType::Docs => "文档改变",
-            CommitTagType::Style => "格式（不影响代码运行的变动）",
-            CommitTagType::Refactor => "重构（既不是新增功能，也不是修改 bug 的代码变动）",
-            CommitTagType::Test => "增加测试",
-            CommitTagType::Chore => "构建过程或辅助工具的变动",
+            CommitTagType::Feat => t!("type.feat").to_string(),
+            CommitTagType::Fix => t!("type.fix").to_string(),
+            CommitTagType::Docs => t!("type.docs").to_string(),
+            CommitTagType::Style => t!("type.style").to_string(),
+            CommitTagType::Refactor => t!("type.refactor").to_string(),
+            CommitTagType::Test => t!("type.test").to_string(),
+            CommitTagType::Chore => t!("type.chore").to_string(),
         }
     }
 }
@@ -89,11 +91,11 @@ impl EditorMode {
     ];
 
     /// 用于 Select 下拉列表的显示文本
-    pub fn display_label(&self) -> &'static str {
+    pub fn display_label(&self) -> String {
         match self {
-            EditorMode::TerminalInline => "Terminal Inline - 在终端中逐行输入",
-            EditorMode::DefaultEditor => "Default Editor - 使用系统默认编辑器",
-            EditorMode::CustomEditor => "Custom Editor - 使用配置文件中指定的编辑器",
+            EditorMode::TerminalInline => t!("editor_mode.terminal_inline").to_string(),
+            EditorMode::DefaultEditor => t!("editor_mode.default_editor").to_string(),
+            EditorMode::CustomEditor => t!("editor_mode.custom_editor").to_string(),
         }
     }
 }

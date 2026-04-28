@@ -1,3 +1,4 @@
+use rust_i18n::t;
 use std::path::PathBuf;
 
 /// commit-msg hook 脚本模板
@@ -25,64 +26,68 @@ fn get_hooks_dir() -> Option<PathBuf> {
 
 /// 安装 commit-msg hook 到当前 git repo
 pub fn install_hook() -> Result<String, String> {
-    let hooks_dir = get_hooks_dir().ok_or("未找到 .git 目录")?;
+    let hooks_dir = get_hooks_dir().ok_or(t!("hook.no_git_dir").to_string())?;
 
     // 确保 hooks 目录存在
-    std::fs::create_dir_all(&hooks_dir).map_err(|e| format!("创建 hooks 目录失败: {}", e))?;
+    std::fs::create_dir_all(&hooks_dir)
+        .map_err(|e| t!("hook.create_hooks_failed", error = e.to_string()).to_string())?;
 
     let hook_path = hooks_dir.join("commit-msg");
 
     // 检查是否已存在 hook
     if hook_path.exists() {
-        let existing =
-            std::fs::read_to_string(&hook_path).map_err(|e| format!("无法读取已有 hook: {}", e))?;
+        let existing = std::fs::read_to_string(&hook_path)
+            .map_err(|e| t!("hook.read_hook_failed", error = e.to_string()).to_string())?;
 
         if existing.contains("commit-audition") {
             // 是本工具生成的，无需重复安装
-            return Ok("commit-msg hook 已安装，无需重复安装".to_string());
+            return Ok(t!("hook.already_installed").to_string());
         }
 
         // 不是本工具生成的，报错
-        return Err(format!(
-            "已存在其他 commit-msg hook: {}\n请手动检查后重试",
-            hook_path.display()
-        ));
+        return Err(t!(
+            "hook.other_hook_exists",
+            path = hook_path.display().to_string()
+        )
+        .to_string());
     }
 
     // 写入 hook 脚本
     std::fs::write(&hook_path, COMMIT_MSG_HOOK)
-        .map_err(|e| format!("写入 commit-msg hook 失败: {}", e))?;
+        .map_err(|e| t!("hook.write_hook_failed", error = e.to_string()).to_string())?;
 
     // Unix: 设置可执行权限
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
         let perms = std::fs::Permissions::from_mode(0o755);
-        std::fs::set_permissions(&hook_path, perms).map_err(|e| format!("无法设置权限: {}", e))?;
+        std::fs::set_permissions(&hook_path, perms)
+            .map_err(|e| t!("hook.set_perms_failed", error = e.to_string()).to_string())?;
     }
 
-    Ok(format!("commit-msg hook 已安装到: {}", hook_path.display()))
+    Ok(t!("hook.installed", path = hook_path.display().to_string()).to_string())
 }
 
 /// 卸载当前仓库的 commit-msg hook
 pub fn uninstall_hook() -> Result<String, String> {
-    let hooks_dir = get_hooks_dir().ok_or("当前目录不在 git 仓库中")?;
+    let hooks_dir = get_hooks_dir().ok_or(t!("hook.not_git_repo").to_string())?;
 
     let hook_path = hooks_dir.join("commit-msg");
 
     if !hook_path.exists() {
-        return Err("commit-msg hook 不存在".into());
+        return Err(t!("hook.hook_not_found").to_string());
     }
 
     // 安全检查：只删除本工具生成的 hook
-    let content =
-        std::fs::read_to_string(&hook_path).map_err(|e| format!("无法读取 hook 文件: {}", e))?;
+    let content = std::fs::read_to_string(&hook_path)
+        .map_err(|e| t!("hook.read_hook_failed_uninstall", error = e.to_string()).to_string())?;
 
     if !content.contains("commit-audition") {
-        return Err("commit-msg hook 不是由 commit-audition 生成的，请手动检查".into());
+        return Err(t!("hook.not_our_hook").to_string());
     }
 
-    std::fs::remove_file(&hook_path).map_err(|e| format!("无法删除 hook 文件: {}", e))?;
+    std::fs::remove_file(&hook_path)
+        .map_err(|e| t!("hook.remove_failed", error = e.to_string()).to_string())?;
 
-    Ok("commit-msg hook 已卸载".into())
+    Ok(t!("hook.uninstalled").to_string())
 }

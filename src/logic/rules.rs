@@ -1,4 +1,5 @@
 use crate::logic::model::CommitTagType;
+use rust_i18n::t;
 use unicode_width::UnicodeWidthStr;
 
 /// 计算 UTF-8 字符串的 Unicode 显示宽度
@@ -102,19 +103,47 @@ pub enum CommitMsgError {
 impl std::fmt::Display for CommitMsgError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CommitMsgError::Empty => write!(f, "commit message 不能为空"),
+            CommitMsgError::Empty => write!(f, "{}", t!("rules.msg_empty")),
             CommitMsgError::MissingType { line } => {
                 write!(
                     f,
-                    "缺少类型前缀，格式应为 \"<type>: <title>\"\n  你的输入: \"{}\"",
-                    line
+                    "{}",
+                    t!("rules.msg_missing_type_with_input", line = line)
                 )
             }
             CommitMsgError::InvalidType { found, valid } => {
-                write!(f, "不合法的类型 \"{}\"\n  合法类型: {}", found, valid)
+                write!(
+                    f,
+                    "{}\n  {}",
+                    t!("rules.msg_invalid_type", found = found),
+                    t!("rules.msg_valid_types", valid = valid)
+                )
             }
-            CommitMsgError::TitleError(e) => write!(f, "标题: {:?}", e),
-            CommitMsgError::BodyError(e) => write!(f, "正文: {:?}", e),
+            CommitMsgError::TitleError(e) => {
+                let msg = match e {
+                    TitleError::Empty => t!("rules.title_empty"),
+                    TitleError::TooLong { width, max } => {
+                        t!("rules.title_too_long", width = width, max = max)
+                    }
+                    TitleError::EndsWithPeriod => t!("rules.title_period"),
+                };
+                write!(f, "{}", msg)
+            }
+            CommitMsgError::BodyError(e) => {
+                let msg = match e {
+                    BodyError::LineTooLong {
+                        line_number,
+                        width,
+                        max,
+                    } => t!(
+                        "rules.body_line_too_long",
+                        line = line_number,
+                        width = width,
+                        max = max
+                    ),
+                };
+                write!(f, "{}", msg)
+            }
         }
     }
 }

@@ -1,4 +1,4 @@
-mod app;
+pub mod app;
 mod event;
 mod view;
 
@@ -11,6 +11,7 @@ use crossterm::terminal::{
 };
 use ratatui::Terminal;
 use ratatui::backend::CrosstermBackend;
+use rust_i18n::t;
 
 use crate::logic::config::load_config;
 use crate::prelude::{CommitMessageEntity, EditorMode};
@@ -19,17 +20,20 @@ use crate::ui::editor;
 /// vim mode 的主入口
 pub fn run_vim_prompt() -> Option<CommitMessageEntity> {
     // 初始化终端
-    enable_raw_mode().expect("无法启用原始模式");
+    enable_raw_mode().expect(&t!("terminal.raw_mode_enable"));
     let mut stdout = stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture).expect("无法切换到备选屏幕");
+    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)
+        .expect(&t!("terminal.alt_screen_enter"));
     let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend).expect("无法创建终端");
+    let mut terminal = Terminal::new(backend).expect(&t!("terminal.terminal_create"));
 
     let mut app = app::App::new();
 
     // 事件循环
     loop {
-        terminal.draw(|f| view::render(f, &app)).expect("渲染失败");
+        terminal
+            .draw(|f| view::render(f, &app))
+            .expect(&t!("terminal.render_failed"));
 
         if let Some(key) = event::poll_event() {
             event::handle_key(key, &mut app);
@@ -56,9 +60,7 @@ pub fn run_vim_prompt() -> Option<CommitMessageEntity> {
                     match &config.editor.command {
                         Some(cmd) => editor::edit_custom_editor(cmd, &config.editor.extension),
                         None => {
-                            eprintln!(
-                                "配置文件中未指定编辑器命令，请编辑 ~/.commit-audition/config.toml"
-                            );
+                            eprintln!("{}", t!("terminal.no_editor_config"));
                             None
                         }
                     }
@@ -73,11 +75,11 @@ pub fn run_vim_prompt() -> Option<CommitMessageEntity> {
 
             // 恢复 TUI
             let mut new_stdout = std::io::stdout();
-            enable_raw_mode().expect("无法启用原始模式");
+            enable_raw_mode().expect(&t!("terminal.raw_mode_enable"));
             execute!(new_stdout, EnterAlternateScreen, EnableMouseCapture)
-                .expect("无法切换到备选屏幕");
+                .expect(&t!("terminal.alt_screen_enter"));
             let backend = CrosstermBackend::new(new_stdout);
-            terminal = Terminal::new(backend).expect("无法创建终端");
+            terminal = Terminal::new(backend).expect(&t!("terminal.terminal_create"));
 
             // 进入下一步
             app.step = app.step.next();
@@ -89,14 +91,14 @@ pub fn run_vim_prompt() -> Option<CommitMessageEntity> {
     }
 
     // 恢复终端
-    disable_raw_mode().expect("无法禁用原始模式");
+    disable_raw_mode().expect(&t!("terminal.raw_mode_disable"));
     execute!(
         terminal.backend_mut(),
         LeaveAlternateScreen,
         DisableMouseCapture
     )
-    .expect("无法恢复终端");
-    terminal.show_cursor().expect("无法显示光标");
+    .expect(&t!("terminal.alt_screen_leave"));
+    terminal.show_cursor().expect(&t!("terminal.cursor_show"));
 
     // 返回结果
     if app.confirmed { app.to_entity() } else { None }
