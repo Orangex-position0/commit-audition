@@ -1,3 +1,4 @@
+use std::fmt::Formatter;
 use rust_i18n::t;
 
 /// Commit 类型标签枚举
@@ -17,6 +18,12 @@ pub enum CommitTagType {
     Test,
     /// 构建过程或辅助工具的变动
     Chore,
+}
+
+impl std::fmt::Display for CommitTagType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} - {}", self.as_str(), self.get_description())
+    }
 }
 
 impl CommitTagType {
@@ -80,6 +87,12 @@ pub enum EditorMode {
     DefaultEditor,
     /// 自定义编辑器模式 (自定义编辑器内输入)
     CustomEditor,
+}
+
+impl std::fmt::Display for EditorMode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.display_label())
+    }
 }
 
 impl EditorMode {

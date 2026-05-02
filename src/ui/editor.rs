@@ -1,9 +1,4 @@
-use std::io::Write;
-use std::process::Command;
-
-use dialoguer::Editor;
 use rust_i18n::t;
-use tempfile::NamedTempFile;
 
 use crate::logic::config::load_config;
 use crate::prelude::*;
@@ -14,11 +9,9 @@ pub fn edit_terminal_inline() -> Option<Option<String>> {
 
     let mut lines: Vec<String> = Vec::new();
     loop {
-        let line: String = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt(t!("ui.body_line_n", n = lines.len() + 1).to_string())
-            .allow_empty(true)
-            .interact_text()
-            .ok()?;
+        let line = Text::new(t!("ui.body_line_n", n = lines.len() + 1).as_ref())
+            .prompt_skippable()
+            .ok()??;
 
         if line.trim().is_empty() && !lines.is_empty() {
             break;
@@ -53,30 +46,19 @@ pub fn edit_terminal_inline() -> Option<Option<String>> {
 
 /// 使用系统默认编辑器
 pub fn edit_default_editor() -> Option<Option<String>> {
-    let editor_hint = detect_default_editor();
+    let msg = t!("ui.body_edit").to_string();
+    let mut editor = inquire::Editor::new(&msg);
+    editor.file_extension = ".md";
 
-    match editor_hint {
-        Some(ref name) => {
-            println!(
-                "{}",
-                t!("terminal.using_editor", name = name).to_string().cyan()
-            );
-        }
-        None => {
-            println!("{}", t!("terminal.no_env_editor").to_string().yellow());
-        }
-    }
+    let content = editor
+        .with_predefined_text(t!("ui.body_hint_template").as_ref())
+        .prompt_skippable()
+        .ok()?;
 
-    let result = Editor::new()
-        .extension("md")
-        .edit(&t!("ui.body_hint_template"))
-        .ok()
-        .flatten();
-
-    match result {
+    match content {
         None => Some(None),
-        Some(content) => {
-            let body = filter_and_clean(&content);
+        Some(text) => {
+            let body = filter_and_clean(&text);
             if body.is_empty() {
                 return Some(None);
             }
@@ -108,70 +90,62 @@ pub fn edit_default_editor() -> Option<Option<String>> {
 
 /// 使用自定义编辑器
 pub fn edit_custom_editor(command: &str, extension: &str) -> Option<Option<String>> {
-    let mut temp = NamedTempFile::new().expect(&t!("terminal.cannot_create_temp"));
-
-    writeln!(temp, "{}", t!("ui.body_hint_template")).ok()?;
-    temp.flush().ok()?;
-
-    let temp_path = temp.path().with_extension(extension);
-    std::fs::rename(temp.path(), &temp_path).ok()?;
-
     let parts: Vec<&str> = command.split_whitespace().collect();
     let (cmd, args) = parts.split_first()?;
 
-    let mut full_args: Vec<&str> = args.to_vec();
-    let path_str = temp_path.to_str()?;
-    full_args.push(path_str);
+    let os_args: Vec<&std::ffi::OsStr> =
+        args.iter().map(std::ffi::OsStr::new).collect();
 
-    let status = Command::new(cmd).args(&full_args).status().ok()?;
+    let msg = t!("ui.body_edit").to_string();
+    let ext = format!(".{}", extension);
+    let mut editor = inquire::Editor::new(&msg);
+    editor.file_extension = &ext;
 
-    if !status.success() {
-        eprintln!(
-            "{}",
-            t!("terminal.editor_exited_abnormally").to_string().red()
-        );
-        return Some(None);
-    }
+    let content = editor
+        .with_predefined_text(t!("ui.body_hint_template").as_ref())
+        .with_editor_command(std::ffi::OsStr::new(cmd))
+        .with_args(&os_args)
+        .prompt_skippable()
+        .ok()?;
 
-    let content = std::fs::read_to_string(&temp_path).ok()?;
+    match content {
+        None => Some(None),
+        Some(text) => {
+            let body = filter_and_clean(&text);
+            if body.is_empty() {
+                return Some(None);
+            }
 
-    let _ = std::fs::remove_file(&temp_path);
-
-    let body = filter_and_clean(&content);
-
-    if body.is_empty() {
-        return Some(None);
-    }
-
-    match validate_body(&body) {
-        Ok(()) => Some(Some(body)),
-        Err(BodyError::LineTooLong {
-            line_number,
-            width,
-            max,
-        }) => {
-            eprintln!(
-                "{}",
-                t!(
-                    "rules.body_line_too_long",
-                    line = line_number,
-                    max = max,
-                    width = width
-                )
-                .to_string()
-                .red()
-            );
-            None
+            match validate_body(&body) {
+                Ok(()) => Some(Some(body)),
+                Err(BodyError::LineTooLong {
+                    line_number,
+                    width,
+                    max,
+                }) => {
+                    eprintln!(
+                        "{}",
+                        t!(
+                            "rules.body_line_too_long",
+                            line = line_number,
+                            max = max,
+                            width = width
+                        )
+                        .to_string()
+                        .red()
+                    );
+                    None
+                }
+            }
         }
     }
 }
 
 /// 统一的 body 输入入口
 pub fn input_body() -> Option<Option<String>> {
-    let add_body = Confirm::with_theme(&ColorfulTheme::default())
-        .with_prompt(t!("ui.add_body").to_string())
-        .default(false)
-        .interact()
+    let add_body = Confirm::new(t!("ui.add_body").as_ref())
+        .with_default(false)
+        .prompt()
         .ok()?;
 
     if !add_body {
@@ -211,26 +185,13 @@ fn filter_and_clean(content: &str) -> String {
         .to_string()
 }
 
-/// 检测系统默认编辑器
-fn detect_default_editor() -> Option<String> {
-    std::env::var("VISUAL")
-        .or_else(|_| std::env::var("EDITOR"))
-        .ok()
-}
-
 /// 下拉选择编辑方式
 fn select_editor_mode() -> Option<EditorMode> {
-    let items: Vec<String> = EditorMode::ALL
-        .iter()
-        .map(|m| m.display_label().to_string())
-        .collect();
-
-    let index = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt(t!("ui.select_editor_mode").to_string())
-        .items(&items)
-        .default(0)
-        .interact()
-        .ok()?;
-
-    EditorMode::ALL.get(index).copied()
+    Select::new(
+        t!("ui.select_editor_mode").as_ref(),
+        EditorMode::ALL.to_vec(),
+    )
+    .with_starting_cursor(0)
+    .prompt_skippable()
+    .ok()?
 }

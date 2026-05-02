@@ -11,20 +11,18 @@ pub fn run_prompt() -> Option<CommitMessageEntity> {
         println!("\n{}", t!("ui.preview").to_string().green().bold());
         println!("{}\n", render_colored_preview(&msg));
 
-        let confirmed = Confirm::with_theme(&ColorfulTheme::default())
-            .with_prompt(t!("ui.confirm_commit").to_string())
-            .default(true)
-            .interact()
+        let confirmed = Confirm::new(t!("ui.confirm_commit").as_ref())
+            .with_default(true)
+            .prompt()
             .unwrap_or(false);
 
         if confirmed {
             return Some(msg);
         }
 
-        let redo = Confirm::with_theme(&ColorfulTheme::default())
-            .with_prompt(t!("ui.re_edit").to_string())
-            .default(true)
-            .interact()
+        let redo = Confirm::new(t!("ui.re_edit").as_ref())
+            .with_default(true)
+            .prompt()
             .unwrap_or(false);
 
         if !redo {
@@ -50,65 +48,56 @@ fn collect_inputs() -> Option<CommitMessageEntity> {
 
 /// 下拉选择 commit tag type
 fn select_type() -> Option<CommitTagType> {
-    let items: Vec<String> = CommitTagType::ALL
-        .iter()
-        .map(|t| format!("{} - {}", t.as_str(), t.get_description()))
-        .collect();
-
-    let index = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt(t!("ui.select_type").to_string())
-        .items(&items)
-        .interact()
-        .ok()?;
-
-    CommitTagType::ALL.get(index).copied()
+   Select::new(
+        t!("ui.select_type").as_ref(),
+        CommitTagType::ALL.to_vec(),
+    )
+   .prompt_skippable()
+   .ok()?
 }
 
 /// 输入 commit title
 fn input_title() -> Option<String> {
-    Input::with_theme(&ColorfulTheme::default())
-        .with_prompt(t!("ui.input_title").to_string())
-        .validate_with(|input: &String| -> Result<(), String> {
+    Text::new(t!("ui.input_title").as_ref())
+        .with_validator(|input: &str| {
             match validate_title(input) {
-                Ok(_) => Ok(()),
-                Err(TitleError::Empty) => Err(t!("ui.title_empty_err").to_string()),
-                Err(TitleError::TooLong { width, max }) => {
-                    Err(t!("ui.title_too_long_err", width = width, max = max).to_string())
+                Ok(_) => Ok(Validation::Valid),
+                Err(TitleError::Empty) => Ok(Validation::Invalid(t!("ui.title_empty_err").to_string().into())),
+                Err(TitleError::TooLong { width, max }) => Ok(Validation::Invalid(
+                    t!("ui.title_too_long_err", width = width, max = max).to_string().into(),
+                )),
+                Err(TitleError::EndsWithPeriod) => {
+                    Ok(Validation::Invalid(t!("ui.title_period_err").to_string().into()))
                 }
-                Err(TitleError::EndsWithPeriod) => Err(t!("ui.title_period_err").to_string()),
             }
         })
-        .allow_empty(false)
-        .interact_text()
-        .ok()
+        .prompt_skippable()
+        .ok()?
 }
 
 /// 输入 issue number
 fn input_issue() -> Option<Option<u32>> {
-    let add_issue = Confirm::with_theme(&ColorfulTheme::default())
-        .with_prompt(t!("ui.add_issue").to_string())
-        .default(false)
-        .interact()
+    let add_issue = Confirm::new(t!("ui.add_issue").as_ref())
+        .with_default(false)
+        .prompt()
         .ok()?;
 
     if !add_issue {
         return Some(None);
     }
 
-    let num: u32 = Input::with_theme(&ColorfulTheme::default())
-        .with_prompt(t!("ui.input_issue").to_string())
-        .validate_with(|input: &String| -> Result<(), String> {
+    let num_str = Text::new(t!("ui.input_issue").as_ref())
+        .with_validator(|input: &str| {
             input
                 .trim()
                 .parse::<u32>()
-                .map(|_| ())
-                .map_err(|_| t!("ui.issue_invalid").to_string())
+                .map(|_| Validation::Valid)
+                .map_err(|_| t!("ui.issue_invalid").to_string().into())
         })
-        .interact_text()
-        .ok()?
-        .trim()
-        .parse()
-        .ok()?;
+        .prompt_skippable()
+        .ok()??;
+
+    let num = num_str.trim().parse().ok()?;
 
     Some(Some(num))
 }

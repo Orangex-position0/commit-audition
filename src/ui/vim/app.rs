@@ -79,6 +79,8 @@ pub struct App {
     pub confirmed: bool,
     /// 是否处于编辑模式
     pub editing: bool,
+    /// 编辑模式下光标在文本中的位置（char 索引）
+    pub cursor: usize,
 }
 
 impl Default for App {
@@ -104,6 +106,7 @@ impl App {
             quit: false,
             confirmed: false,
             editing: false,
+            cursor: 0,
         }
     }
 

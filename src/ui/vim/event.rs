@@ -30,17 +30,34 @@ pub fn handle_key(key: KeyEvent, app: &mut App) {
         return;
     }
 
-    // 编辑模式：仅处理文本输入、退格、确认和取消
+    // 编辑模式：处理文本输入、光标移动、退格、确认和取消
     if app.editing {
         match key.code {
+            KeyCode::Left => {
+                if app.cursor > 0 {
+                    app.cursor -= 1;
+                }
+            }
+            KeyCode::Right => {
+                let len = match app.step {
+                    Step::InputTitle => app.title.len(),
+                    Step::InputIssue => app.issue_num.len(),
+                    _ => 0,
+                };
+                if app.cursor < len {
+                    app.cursor += 1;
+                }
+            }
             KeyCode::Char(c) => handle_char(c, app),
             KeyCode::Backspace => handle_backspace(app),
             KeyCode::Enter => {
                 app.editing = false;
+                app.cursor = 0;
                 app.step = app.step.next();
             }
             KeyCode::Esc => {
                 app.editing = false;
+                app.cursor = 0;
             }
             _ => {}
         }
@@ -154,6 +171,7 @@ fn handle_enter(app: &mut App) {
         }
         Step::InputTitle => {
             app.editing = true;
+            app.cursor = app.title.len();
         }
         Step::SelectBody => {
             app.body_selected = true;
@@ -164,6 +182,7 @@ fn handle_enter(app: &mut App) {
         }
         Step::InputIssue => {
             app.editing = true;
+            app.cursor = app.issue_num.len();
         }
         Step::Preview => {
             app.confirmed = true;
@@ -223,10 +242,12 @@ fn handle_char(c: char, app: &mut App) {
             app.filter_text.push(c);
         }
         Step::InputTitle => {
-            app.title.push(c);
+            app.title.insert(app.cursor, c);
+            app.cursor += 1;
         }
         Step::InputIssue => {
-            app.issue_num.push(c);
+            app.issue_num.insert(app.cursor, c);
+            app.cursor += 1;
         }
         _ => {}
     }
@@ -238,10 +259,16 @@ fn handle_backspace(app: &mut App) {
             app.filter_text.pop();
         }
         Step::InputTitle => {
-            app.title.pop();
+            if app.cursor > 0 {
+                app.title.remove(app.cursor - 1);
+                app.cursor -= 1;
+            }
         }
         Step::InputIssue => {
-            app.issue_num.pop();
+            if app.cursor > 0 {
+                app.issue_num.remove(app.cursor - 1);
+                app.cursor -= 1;
+            }
         }
         _ => {}
     }
@@ -408,6 +435,109 @@ mod tests {
         handle_key(key(KeyCode::Esc), &mut app);
         assert!(!app.editing);
         assert_eq!(app.step, Step::InputTitle);
+    }
+
+    // --- 光标移动 ---
+
+    #[test]
+    fn edit_mode_left_moves_cursor() {
+        let mut app = App::new();
+        app.step = Step::InputTitle;
+        app.editing = true;
+        app.title = "abc".to_string();
+        app.cursor = 2;
+        handle_key(key(KeyCode::Left), &mut app);
+        assert_eq!(app.cursor, 1);
+    }
+
+    #[test]
+    fn edit_mode_right_moves_cursor() {
+        let mut app = App::new();
+        app.step = Step::InputTitle;
+        app.editing = true;
+        app.title = "abc".to_string();
+        app.cursor = 1;
+        handle_key(key(KeyCode::Right), &mut app);
+        assert_eq!(app.cursor, 2);
+    }
+
+    #[test]
+    fn edit_mode_left_at_zero_no_op() {
+        let mut app = App::new();
+        app.step = Step::InputTitle;
+        app.editing = true;
+        app.cursor = 0;
+        handle_key(key(KeyCode::Left), &mut app);
+        assert_eq!(app.cursor, 0);
+    }
+
+    #[test]
+    fn edit_mode_right_at_end_no_op() {
+        let mut app = App::new();
+        app.step = Step::InputTitle;
+        app.editing = true;
+        app.title = "abc".to_string();
+        app.cursor = 3;
+        handle_key(key(KeyCode::Right), &mut app);
+        assert_eq!(app.cursor, 3);
+    }
+
+    #[test]
+    fn edit_mode_char_inserts_at_cursor() {
+        let mut app = App::new();
+        app.step = Step::InputTitle;
+        app.editing = true;
+        app.title = "ac".to_string();
+        app.cursor = 1;
+        handle_key(key(KeyCode::Char('b')), &mut app);
+        assert_eq!(app.title, "abc");
+        assert_eq!(app.cursor, 2);
+    }
+
+    #[test]
+    fn edit_mode_backspace_deletes_before_cursor() {
+        let mut app = App::new();
+        app.step = Step::InputTitle;
+        app.editing = true;
+        app.title = "abc".to_string();
+        app.cursor = 2;
+        handle_key(key(KeyCode::Backspace), &mut app);
+        assert_eq!(app.title, "ac");
+        assert_eq!(app.cursor, 1);
+    }
+
+    #[test]
+    fn edit_mode_backspace_at_zero_no_op() {
+        let mut app = App::new();
+        app.step = Step::InputTitle;
+        app.editing = true;
+        app.title = "abc".to_string();
+        app.cursor = 0;
+        handle_key(key(KeyCode::Backspace), &mut app);
+        assert_eq!(app.title, "abc");
+        assert_eq!(app.cursor, 0);
+    }
+
+    #[test]
+    fn edit_mode_esc_resets_cursor() {
+        let mut app = App::new();
+        app.step = Step::InputTitle;
+        app.editing = true;
+        app.title = "abc".to_string();
+        app.cursor = 2;
+        handle_key(key(KeyCode::Esc), &mut app);
+        assert_eq!(app.cursor, 0);
+    }
+
+    #[test]
+    fn edit_mode_enter_resets_cursor() {
+        let mut app = App::new();
+        app.step = Step::InputTitle;
+        app.editing = true;
+        app.title = "abc".to_string();
+        app.cursor = 2;
+        handle_key(key(KeyCode::Enter), &mut app);
+        assert_eq!(app.cursor, 0);
     }
 
     #[test]
@@ -664,8 +794,10 @@ mod tests {
         let mut app = App::new();
         app.step = Step::InputTitle;
         app.title = "Hi".to_string();
+        app.cursor = 2;
         handle_backspace(&mut app);
         assert_eq!(app.title, "H");
+        assert_eq!(app.cursor, 1);
     }
 
     #[test]

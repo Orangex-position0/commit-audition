@@ -8,6 +8,24 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph, Wrap};
 use rust_i18n::t;
 
+/// 在光标位置插入 ▎ 指示符
+fn build_text_with_cursor(text: &str, cursor: usize) -> String {
+    let chars: Vec<char> = text.chars().collect();
+    let cursor_char = cursor.min(chars.len());
+    let mut result = String::with_capacity(chars.len() + 1);
+    for (i, c) in chars.iter().enumerate() {
+        if i == cursor_char {
+            result.push('▎');
+        }
+        result.push(*c);
+    }
+    // 光标在末尾
+    if cursor_char == chars.len() {
+        result.push('▎');
+    }
+    result
+}
+
 /// 渲染模块
 pub fn render(f: &mut Frame, app: &App) {
     let chunks = Layout::default()
@@ -128,7 +146,7 @@ fn render_input_title(f: &mut Frame, app: &App, area: Rect) {
         t!("vim.title_viewing").to_string()
     };
 
-    let input = Paragraph::new(app.title.as_str()).block(
+    let input = Paragraph::new(build_text_with_cursor(app.title.as_str(), app.cursor)).block(
         Block::default()
             .title(title_text)
             .borders(Borders::ALL)
@@ -221,7 +239,7 @@ fn render_input_issue(f: &mut Frame, app: &App, area: Rect) {
         t!("vim.issue_viewing").to_string()
     };
 
-    let input = Paragraph::new(app.issue_num.as_str()).block(
+    let input = Paragraph::new(build_text_with_cursor(app.issue_num.as_str(), app.cursor)).block(
         Block::default()
             .title(title_text)
             .borders(Borders::ALL)
