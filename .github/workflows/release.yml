@@ -39,7 +39,6 @@ permissions:
 # If there's a prerelease-style suffix to the version, then the release(s)
 # will be marked as a prerelease.
 on:
-  pull_request:
   push:
     tags:
       - '**[0-9]+.[0-9]+.[0-9]+*'
@@ -60,6 +59,16 @@ jobs:
         with:
           persist-credentials: false
           submodules: recursive
+      - name: Verify tag version matches Cargo.toml
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          CARGO_VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          if [ "$TAG" != "$CARGO_VERSION" ]; then
+            echo "::error::Tag version ($TAG) does not match Cargo.toml version ($CARGO_VERSION)"
+            exit 1
+          fi
+          echo "Tag version ($TAG) matches Cargo.toml"
       - name: Install dist
         # we specify bash to get pipefail; it guards against the `curl` command
         # failing. otherwise `sh` won't catch that `curl` returned non-0
@@ -227,8 +236,18 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
+          fetch-depth: 0
           persist-credentials: false
           submodules: recursive
+      - name: Generate release notes with git-cliff
+        run: |
+          cargo install git-cliff --locked
+          PREV_TAG=$(git describe --tags --abbrev=0 "${{ needs.plan.outputs.tag }}^" 2>/dev/null || true)
+          if [ -z "$PREV_TAG" ]; then
+            git cliff --tag "${{ needs.plan.outputs.tag }}" > release_notes.md
+          else
+            git cliff "${PREV_TAG}..${{ needs.plan.outputs.tag }}" > release_notes.md
+          fi
       - name: Install cached dist
         uses: actions/download-artifact@v7
         with:
@@ -245,7 +264,7 @@ jobs:
       - id: host
         shell: bash
         run: |
-          dist host ${{ needs.plan.outputs.tag-flag }} --steps=upload --steps=release --output-format=json > dist-manifest.json
+          dist host ${{ needs.plan.outputs.tag-flag }} --steps=upload --output-format=json > dist-manifest.json
           echo "artifacts uploaded and released successfully"
           cat dist-manifest.json
           echo "manifest=$(jq -c "." dist-manifest.json)" >> "$GITHUB_OUTPUT"
@@ -270,11 +289,14 @@ jobs:
         env:
           PRERELEASE_FLAG: "${{ fromJson(steps.host.outputs.manifest).announcement_is_prerelease && '--prerelease' || '' }}"
           ANNOUNCEMENT_TITLE: "${{ fromJson(steps.host.outputs.manifest).announcement_title }}"
-          ANNOUNCEMENT_BODY: "${{ fromJson(steps.host.outputs.manifest).announcement_github_body }}"
           RELEASE_COMMIT: "${{ github.sha }}"
         run: |
-          # Write and read notes from a file to avoid quoting breaking things
-          echo "$ANNOUNCEMENT_BODY" > $RUNNER_TEMP/notes.txt
+          # 使用 git-cliff 生成的 notes，fallback 到 cargo-dist body
+          if [ -s release_notes.md ]; then
+            cp release_notes.md "$RUNNER_TEMP/notes.txt"
+          else
+            echo "${{ fromJson(steps.host.outputs.manifest).announcement_github_body }}" > "$RUNNER_TEMP/notes.txt"
+          fi
 
           gh release create "${{ needs.plan.outputs.tag }}" --target "$RELEASE_COMMIT" $PRERELEASE_FLAG --title "$ANNOUNCEMENT_TITLE" --notes-file "$RUNNER_TEMP/notes.txt" artifacts/*
 

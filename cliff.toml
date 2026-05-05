@@ -1,0 +1,52 @@
+# git-cliff 配置
+# https://git-cliff.org/docs/configuration
+#
+# 用法:
+#   git-cliff                        # 预览下一版本的 changelog
+#   git-cliff --tag v0.6.0           # 预览指定版本的 release notes
+#   git-cliff -o CHANGELOG.md        # 更新完整 changelog 文件
+
+[changelog]
+header = """
+# Changelog\n
+All notable changes to this project will be documented in this file.\n
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),\
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).\n
+"""
+body = """
+{% if version %}\
+    ## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else %}\
+    ## [Unreleased]
+{% endif %}\
+{% for group, commits in commits | group_by(attribute="group") %}
+    ### {{ group | upper_first }}
+    {% for commit in commits %}
+        - {{ commit.message | upper_first }}\
+            {% if commit.breaking %} (**BREAKING**){% endif %}\
+    {% endfor %}
+{% endfor %}\n
+"""
+trim = true
+
+[git]
+conventional_commits = true
+filter_unconventional = true
+split_commits = false
+commit_parsers = [
+    { message = "^feat", group = "Added" },
+    { message = "^fix", group = "Fixed" },
+    { message = "^doc", group = "Documentation" },
+    { message = "^perf", group = "Performance" },
+    { message = "^refactor", group = "Changed" },
+    { message = "^style", group = "Changed" },
+    { message = "^test", group = "Added" },
+    { message = "^chore\\(release\\)", skip = true },
+    { message = "^chore|^ci|^build", skip = true },
+    { body = ".*security", group = "Security" },
+    { message = "^revert", group = "Fixed" },
+]
+protect_breaking_commits = false
+filter_commits = false
+tag_pattern = "v[0-9].*"
+sort_commits = "oldest"
