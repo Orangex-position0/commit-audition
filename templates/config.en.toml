@@ -1,0 +1,61 @@
+# commit-audition configuration
+# Copy this file to ~/.commit-audition/config.toml and adjust as needed
+#
+# Options not configured will use their default values
+
+# UI language
+# Available values: "en" (English), "zh" (Chinese)
+# Default: "en"
+language = "en"
+
+# Enable vim mode (full-screen TUI interface)
+# When enabled, vim-style keybindings are used for navigation
+# Default: false
+# vim_mode = true
+
+# ---------------------------------------------------------------------------
+# Editor settings
+# ---------------------------------------------------------------------------
+[editor]
+
+# Custom editor launch command
+# Used when "Custom Editor" mode is selected to open a temporary file
+# If not configured and Custom Editor mode is selected, the program will exit with an error
+#
+# Common editor examples:
+#   VS Code      → "code --wait"
+#   Vim          → "vim"
+#   Neovim       → "nvim"
+#   Helix        → "hx"
+#   Sublime Text → "subl -w"
+command = "code --wait"
+
+# File extension for the temporary file, affects syntax highlighting in the editor
+# Default: "md"
+extension = "md"
+
+# ---------------------------------------------------------------------------
+# AI settings (optional)
+# ---------------------------------------------------------------------------
+# When enabled, use `commit-audition ai` to generate commit messages with AI
+# Uncomment below and fill in your AI service credentials
+#
+# [ai]
+# # AI provider (required)
+# # Supported: "claude", "openai", "ollama", "deepseek", etc.
+# provider = "openai"
+#
+# # API key (required for Claude and OpenAI, not needed for Ollama)
+# api_key = "sk-..."
+#
+# # Custom API endpoint (optional, overrides the provider's default URL)
+# # OpenAI-compatible service examples:
+# #   DeepSeek → "https://api.deepseek.com/v1"
+# #   Ollama   → "http://localhost:11434/v1"
+# # endpoint = "https://api.deepseek.com/v1"
+#
+# # Model name (optional, each provider has a default value)
+# # model = "gpt-4o"
+#
+# # Custom prompt file path (optional)
+# # prompt_file = "~/.commit-audition/prompt.md"

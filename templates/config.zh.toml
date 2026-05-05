@@ -1,0 +1,61 @@
+# commit-audition 配置文件
+# 将此文件复制到 ~/.commit-audition/config.toml 并根据需要修改
+#
+# 未配置的选项将使用默认值
+
+# 界面语言
+# 可选值: "en" (英文), "zh" (中文)
+# 默认值: "en"
+language = "zh"
+
+# 是否启用 vim 模式（全屏 TUI 交互界面）
+# 启用后将使用 vim 风格快捷键操作
+# 默认值: false
+# vim_mode = true
+
+# ---------------------------------------------------------------------------
+# 编辑器配置
+# ---------------------------------------------------------------------------
+[editor]
+
+# 自定义编辑器启动命令
+# 选择 "Custom Editor" 编辑模式时会使用此命令打开临时文件
+# 若不配置且选择了自定义编辑器模式，程序会提示错误并退出
+#
+# 常用编辑器示例:
+#   VS Code      → "code --wait"
+#   Vim          → "vim"
+#   Neovim       → "nvim"
+#   Helix        → "hx"
+#   Sublime Text → "subl -w"
+command = "code --wait"
+
+# 临时文件的扩展名，影响编辑器的语法高亮
+# 默认值: "md"
+extension = "md"
+
+# ---------------------------------------------------------------------------
+# AI 配置（可选）
+# ---------------------------------------------------------------------------
+# 启用后可通过 `commit-audition ai` 命令使用 AI 生成 commit message
+# 取消下方注释并根据你的 AI 服务填写配置
+#
+# [ai]
+# # AI 提供者（必填）
+# # 支持: "claude", "openai", "ollama", "deepseek" 等
+# provider = "openai"
+#
+# # API 密钥（Claude 和 OpenAI 必填，Ollama 不需要）
+# api_key = "sk-..."
+#
+# # 自定义 API 端点（可选，覆盖 provider 的默认地址）
+# # OpenAI 兼容服务示例:
+# #   DeepSeek → "https://api.deepseek.com/v1"
+# #   Ollama   → "http://localhost:11434/v1"
+# # endpoint = "https://api.deepseek.com/v1"
+#
+# # 模型名称（可选，每个 provider 有默认值）
+# # model = "gpt-4o"
+#
+# # 自定义 prompt 文件路径（可选）
+# # prompt_file = "~/.commit-audition/prompt.md"
