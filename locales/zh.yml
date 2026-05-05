@@ -93,6 +93,30 @@ hook:
   remove_failed: "无法删除 hook 文件: %{error}"
   uninstalled: "commit-msg hook 已卸载"
 
+ai:
+  system_prompt: |
+    你是一个 commit message 生成助手。根据 git diff 内容生成符合 Conventional Commits 规范的 commit message。
+
+    规则：
+    - type 只能是以下之一: feat, fix, docs, style, refactor, tests, chore
+    - title 用祈使语气，首字母大写，不超过 50 显示宽度（中文字符占 2 宽度）
+    - title 不以句号结尾
+    - body 简明描述改动的原因和内容，每行不超过 72 显示宽度
+    - 如果 diff 内容较少，body 可以为空
+    - 不要在 body 中重复 title 已有的信息
+
+    严格以以下 JSON 格式返回（不要添加其他内容）：
+    {"type": "<type>", "title": "<title>", "body": "<body 或 null>"}
+  user_prompt_stat_label: "以下是本次变更的文件摘要："
+  user_prompt_diff_label: "以下是 git diff --cached 的内容："
+  user_prompt_without_stat: "以下是本次 git diff --cached 的内容："
+  analyzing: "AI 正在分析 diff..."
+  generating_done: "AI 生成完成, 进入编辑确认"
+  generation_failed: "AI 生成失败: "
+  fallback_manual: "回退到手动输入模式"
+  no_config: "未配置 AI provider, 请在 ~/.commit-audition/config.toml 中添加 [ai] 配置段"
+  config_error: "AI 配置错误: "
+
 terminal:
   no_editor_config: "配置文件中未指定编辑器命令，请编辑 ~/.commit-audition/config.toml"
   editor_config_example: "示例:\n[editor]\ncommand = \"code --wait\""

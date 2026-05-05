@@ -93,6 +93,30 @@ hook:
   remove_failed: "Cannot remove hook file: %{error}"
   uninstalled: "commit-msg hook uninstalled"
 
+ai:
+  system_prompt: |
+    You are a commit message generator. Generate commit messages following the Conventional Commits specification based on git diff content.
+
+    Rules:
+    - type must be one of: feat, fix, docs, style, refactor, tests, chore
+    - title in imperative mood, capitalize first letter, max 50 display width (CJK chars = 2 width)
+    - title must not end with a period
+    - body concisely describes the reason and content of changes, each line max 72 display width
+    - body can be empty if the diff is minimal
+    - do not repeat information already in the title in the body
+
+    Return strictly in this JSON format (no other content):
+    {"type": "<type>", "title": "<title>", "body": "<body or null>"}
+  user_prompt_stat_label: "File summary of this change:"
+  user_prompt_diff_label: "Git diff --cached content:"
+  user_prompt_without_stat: "Git diff --cached content:"
+  analyzing: "AI is analyzing diff..."
+  generating_done: "AI generation complete, entering edit confirmation"
+  generation_failed: "AI generation failed: "
+  fallback_manual: "Falling back to manual input mode"
+  no_config: "AI provider not configured. Add [ai] section to ~/.commit-audition/config.toml"
+  config_error: "AI config error: "
+
 terminal:
   no_editor_config: "Editor command not configured, edit ~/.commit-audition/config.toml"
   editor_config_example: "Example:\n[editor]\ncommand = \"code --wait\""

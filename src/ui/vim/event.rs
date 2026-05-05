@@ -33,10 +33,8 @@ pub fn handle_key(key: KeyEvent, app: &mut App) {
     // 编辑模式：处理文本输入、光标移动、退格、确认和取消
     if app.editing {
         match key.code {
-            KeyCode::Left => {
-                if app.cursor > 0 {
-                    app.cursor -= 1;
-                }
+            KeyCode::Left if app.cursor > 0 => {
+                app.cursor -= 1;
             }
             KeyCode::Right => {
                 let len = match app.step {
@@ -47,6 +45,9 @@ pub fn handle_key(key: KeyEvent, app: &mut App) {
                 if app.cursor < len {
                     app.cursor += 1;
                 }
+            }
+            KeyCode::Char('a') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                app.ai_loading = true;
             }
             KeyCode::Char(c) => handle_char(c, app),
             KeyCode::Backspace => handle_backspace(app),
@@ -258,17 +259,13 @@ fn handle_backspace(app: &mut App) {
         Step::SelectType | Step::SelectBody if app.searching => {
             app.filter_text.pop();
         }
-        Step::InputTitle => {
-            if app.cursor > 0 {
-                app.title.remove(app.cursor - 1);
-                app.cursor -= 1;
-            }
+        Step::InputTitle if app.cursor > 0 => {
+            app.title.remove(app.cursor - 1);
+            app.cursor -= 1;
         }
-        Step::InputIssue => {
-            if app.cursor > 0 {
-                app.issue_num.remove(app.cursor - 1);
-                app.cursor -= 1;
-            }
+        Step::InputIssue if app.cursor > 0 => {
+            app.issue_num.remove(app.cursor - 1);
+            app.cursor -= 1;
         }
         _ => {}
     }

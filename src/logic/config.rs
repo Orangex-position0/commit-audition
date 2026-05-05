@@ -15,6 +15,9 @@ pub struct AppConfig {
     /// 是否启用 vim 模式
     #[serde(default)]
     pub vim_mode: bool,
+
+    /// AI 配置 (可选)
+    pub ai: Option<AiConfig>,
 }
 
 fn default_language() -> String {
@@ -51,6 +54,7 @@ impl Default for AppConfig {
             language: default_language(),
             editor: EditorConfig::default(),
             vim_mode: false,
+            ai: None,
         }
     }
 }
@@ -71,6 +75,39 @@ pub fn load_config() -> AppConfig {
         return AppConfig::default();
     }
 
-    let content = std::fs::read_to_string(&path).unwrap_or_default();
-    toml::from_str(&content).unwrap_or_default()
+    let content = match std::fs::read_to_string(&path) {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("警告: 无法读取配置文件 {}: {}", path.display(), e);
+            return AppConfig::default();
+        }
+    };
+
+    match toml::from_str(&content) {
+        Ok(config) => config,
+        Err(e) => {
+            eprintln!("警告: 配置文件解析失败: {}", e);
+            AppConfig::default()
+        }
+    }
+}
+
+#[derive(Deserialize, Clone)]
+pub struct AiConfig {
+    /// LLM 提供者名称
+    /// - "claude" → ClaudeProvider（Claude Messages API 独立实现）
+    /// - "openai" / "ollama" / "deepseek" / 其他 → OpenAiCompatibleProvider
+    pub provider: String,
+
+    /// API key（Claude 必填，OpenAI 兼容的 provider 按需填写，Ollama 不需要）
+    pub api_key: Option<String>,
+
+    /// 自定义 API 端点（覆盖 provider 的默认 endpoint）
+    pub endpoint: Option<String>,
+
+    /// 模型名称（可选，每个 provider 有默认值）
+    pub model: Option<String>,
+
+    /// 自定义 prompt 文件路径
+    pub prompt_file: Option<String>,
 }

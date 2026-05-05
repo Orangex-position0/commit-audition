@@ -1,5 +1,5 @@
-use std::fmt::Formatter;
 use rust_i18n::t;
+use std::fmt::Formatter;
 
 /// Commit 类型标签枚举
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

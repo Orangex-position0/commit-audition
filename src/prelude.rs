@@ -1,7 +1,7 @@
 // 外部 crate 工具
 pub use colored::Colorize;
-pub use inquire::{Confirm, Select, Text};
 pub use inquire::validator::Validation;
+pub use inquire::{Confirm, Select, Text};
 
 // Logic 层 - 领域模型
 pub use crate::logic::model::{CommitMessageEntity, CommitTagType, EditorMode};

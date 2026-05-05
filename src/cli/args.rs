@@ -27,6 +27,8 @@ pub enum Commands {
         #[command(subcommand)]
         action: HookAction,
     },
+    /// AI 生成 commit message 建议
+    Ai,
 }
 
 #[derive(Subcommand)]
@@ -45,6 +47,8 @@ pub enum CliConfig {
     Validate { file: String },
     /// Hook 管理
     Hook(HookAction),
+    /// AI 生成模式
+    Ai,
 }
 
 impl From<CliArgs> for CliConfig {
@@ -55,6 +59,7 @@ impl From<CliArgs> for CliConfig {
             },
             Some(Commands::Validate { file }) => CliConfig::Validate { file },
             Some(Commands::Hook { action }) => CliConfig::Hook(action),
+            Some(Commands::Ai) => CliConfig::Ai,
         }
     }
 }

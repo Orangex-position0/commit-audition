@@ -4,6 +4,11 @@ mod view;
 
 use std::io::stdout;
 
+use crate::logic::ai::provider::AiSuggestion;
+use crate::logic::config::load_config;
+use crate::prelude::{CommitMessageEntity, EditorMode};
+use crate::ui::editor;
+use crate::ui::vim::app::App;
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use crossterm::execute;
 use crossterm::terminal::{
@@ -13,12 +18,19 @@ use ratatui::Terminal;
 use ratatui::backend::CrosstermBackend;
 use rust_i18n::t;
 
-use crate::logic::config::load_config;
-use crate::prelude::{CommitMessageEntity, EditorMode};
-use crate::ui::editor;
-
 /// vim mode 的主入口
 pub fn run_vim_prompt() -> Option<CommitMessageEntity> {
+    run_vim_prompt_with_app(App::new())
+}
+
+/// 带 AI 预填充的 vim 模式交互
+pub fn run_vim_prompt_with_suggestion(suggestion: AiSuggestion) -> Option<CommitMessageEntity> {
+    let app = App::with_suggestion(suggestion);
+    run_vim_prompt_with_app(app)
+}
+
+/// 内部复用的事件循环
+fn run_vim_prompt_with_app(mut app: App) -> Option<CommitMessageEntity> {
     // 初始化终端
     enable_raw_mode().expect(&t!("terminal.raw_mode_enable"));
     let mut stdout = stdout();
@@ -26,8 +38,6 @@ pub fn run_vim_prompt() -> Option<CommitMessageEntity> {
         .expect(&t!("terminal.alt_screen_enter"));
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend).expect(&t!("terminal.terminal_create"));
-
-    let mut app = app::App::new();
 
     // 事件循环
     loop {

@@ -93,8 +93,7 @@ pub fn edit_custom_editor(command: &str, extension: &str) -> Option<Option<Strin
     let parts: Vec<&str> = command.split_whitespace().collect();
     let (cmd, args) = parts.split_first()?;
 
-    let os_args: Vec<&std::ffi::OsStr> =
-        args.iter().map(std::ffi::OsStr::new).collect();
+    let os_args: Vec<&std::ffi::OsStr> = args.iter().map(std::ffi::OsStr::new).collect();
 
     let msg = t!("ui.body_edit").to_string();
     let ext = format!(".{}", extension);

@@ -1,3 +1,4 @@
+use crate::logic::ai::provider::AiSuggestion;
 use crate::prelude::{CommitMessageEntity, CommitTagType, EditorMode};
 use rust_i18n::t;
 
@@ -81,6 +82,10 @@ pub struct App {
     pub editing: bool,
     /// 编辑模式下光标在文本中的位置（char 索引）
     pub cursor: usize,
+    /// Ai 生成的预填充内容
+    pub ai_suggestion: Option<AiSuggestion>,
+    /// AI 是否正在生成中 (用于加载动画)
+    pub ai_loading: bool,
 }
 
 impl Default for App {
@@ -107,6 +112,8 @@ impl App {
             confirmed: false,
             editing: false,
             cursor: 0,
+            ai_suggestion: None,
+            ai_loading: false,
         }
     }
 
@@ -127,6 +134,25 @@ impl App {
             body,
             issue_num,
         })
+    }
+
+    /// 从 AI 建议创建预填充的 App
+    pub fn with_suggestion(suggestion: AiSuggestion) -> Self {
+        let mut app = Self::new();
+
+        if let Some(idx) = CommitTagType::ALL
+            .iter()
+            .position(|t| *t == suggestion.commit_type)
+        {
+            app.selected_type_index = idx;
+        }
+
+        app.title = suggestion.title.clone();
+        app.body = suggestion.body.clone();
+        app.ai_suggestion = Some(suggestion);
+        app.step = Step::Preview;
+
+        app
     }
 }
 

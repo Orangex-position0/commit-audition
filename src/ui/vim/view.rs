@@ -2,7 +2,7 @@ use crate::prelude::{CommitTagType, EditorMode};
 use crate::ui::vim::app::{App, Step};
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
-use ratatui::prelude::{Color, Direction};
+use ratatui::prelude::{Alignment, Color, Direction};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph, Wrap};
@@ -77,6 +77,11 @@ fn is_step_completed(app: &App, step: &Step) -> bool {
 
 /// 根据当前步骤渲染内容区
 fn render_content(f: &mut Frame, app: &App, area: Rect) {
+    if app.ai_loading {
+        render_ai_loading(f, area);
+        return;
+    }
+
     match app.step {
         Step::SelectType => render_select_type(f, app, area),
         Step::InputTitle => render_input_title(f, app, area),
@@ -345,6 +350,16 @@ fn render_help_bar(f: &mut Frame, app: &App, area: Rect) {
         .style(Style::default().fg(Color::DarkGray))
         .block(Block::default().borders(Borders::ALL));
     f.render_widget(paragraph, area);
+}
+
+/// 渲染 AI 加载中状态
+fn render_ai_loading(frame: &mut Frame, area: Rect) {
+    let loading_text = Paragraph::new("AI 正在分析 diff")
+        .style(Style::default().fg(Color::Cyan))
+        .alignment(Alignment::Center)
+        .wrap(Wrap { trim: false });
+
+    frame.render_widget(loading_text, area);
 }
 
 #[cfg(test)]
